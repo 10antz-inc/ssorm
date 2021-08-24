@@ -1,21 +1,59 @@
-The MIT License (MIT)
+SSORM
+=========
 
-Copyright (c) 2021-NOW  Mine <m-mine@10antz.co.jp> Haga <k-haga@10antz.co.jp>
+SSORM is a simple spanner orm
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+Inspired by [GORM](https://github.com/go-gorm/gorm)
 
-The above copyright notice and this permission notice shall be included in
-all copies or substantial portions of the Software.
+Overview
+=========
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-THE SOFTWARE.
+* Feature ORM
+  * Insert 
+  * Update (Model and Map)
+  * Find
+  * First
+  * Count
+  * Delete (Model and Condition)
+
+
+Run Test
+=========
+Config spanner-emulator && create instance && create database && insert record
+```
+. ./tests/ddl/create_datbase.sh
+```
+
+Run test
+=========
+```
+go test -v ./tests/...
+```
+
+
+Custom Logger
+=========
+
+```go
+ssorm.CreateDB(sorm.Logger({custom logger}))
+```
+
+Logger Interface
+=========
+
+```go
+type ILogger interface {
+	Debugf(format string, args ...interface{})
+	Infof(format string, args ...interface{})
+	Warnf(format string, args ...interface{})
+	Errorf(format string, args ...interface{})
+	Fatalf(format string, args ...interface{})
+	Panicf(format string, args ...interface{})
+}
+```
+
+## License
+
+@m-mine @k-haga, 2021~time.Now
+
+Released under the [MIT License](https://github.com/go-gorm/gorm/blob/master/License)
