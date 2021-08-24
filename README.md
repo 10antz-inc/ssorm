@@ -3,8 +3,6 @@ SSORM
 
 SSORM is a simple spanner orm
 
-Inspired by [GORM](https://github.com/go-gorm/gorm)
-
 Overview
 =========
 
