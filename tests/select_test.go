@@ -7,7 +7,7 @@ import (
 	"testing"
 )
 
-func TestSelectColumn(t *testing.T) {
+func TestSelectColumnReadWrite(t *testing.T) {
 	url := "projects/spanner-emulator/instances/test/databases/test"
 	ctx := context.Background()
 
@@ -26,7 +26,7 @@ func TestSelectColumn(t *testing.T) {
 	}
 }
 
-func TestSelectAllColumn(t *testing.T) {
+func TestSelectAllColumnReadWrite(t *testing.T) {
 	url := "projects/spanner-emulator/instances/test/databases/test"
 	ctx := context.Background()
 

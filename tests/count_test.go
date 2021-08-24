@@ -7,7 +7,7 @@ import (
 	"testing"
 )
 
-func TestCount(t *testing.T) {
+func TestCountReadWrite(t *testing.T) {
 	url := "projects/spanner-emulator/instances/test/databases/test"
 	ctx := context.Background()
 
