@@ -98,10 +98,11 @@ func (db *DB) DeleteWhere(ctx context.Context, spannerTransaction *spanner.ReadW
 	return rowCount, err
 }
 
-func (db *DB) First(model interface{},ctx context.Context, spannerTransaction interface{}) error {
+func (db *DB) First(model interface{}, ctx context.Context, spannerTransaction interface{}) error {
 	db.mu.Lock()
 	defer db.mu.Unlock()
 
+	db.builder.limit = 1
 	query, _ := db.Model(model).builder.selectQuery()
 
 	var (
@@ -138,7 +139,7 @@ func (db *DB) First(model interface{},ctx context.Context, spannerTransaction in
 	return err
 }
 
-func (db *DB) Count(cnt interface{},ctx context.Context, spannerTransaction interface{}) error {
+func (db *DB) Count(cnt interface{}, ctx context.Context, spannerTransaction interface{}) error {
 	var (
 		err  error
 		iter *spanner.RowIterator
@@ -180,7 +181,7 @@ func (db *DB) Count(cnt interface{},ctx context.Context, spannerTransaction inte
 	return err
 }
 
-func (db *DB) Find(model interface{},ctx context.Context, spannerTransaction interface{}) error {
+func (db *DB) Find(model interface{}, ctx context.Context, spannerTransaction interface{}) error {
 	db.mu.Lock()
 	defer db.mu.Unlock()
 
