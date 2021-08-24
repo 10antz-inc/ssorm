@@ -52,6 +52,6 @@ type ILogger interface {
 
 ## License
 
-@m-mine @k-haga, 2021~time.Now
+Copyright 2021 Mercari, Inc.
 
-Released under the [MIT License](https://github.com/go-gorm/gorm/blob/master/License)
+Released under the [MIT License](https://opensource.org/licenses/MIT)
