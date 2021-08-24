@@ -245,61 +245,42 @@ func (db *DB) Find(model interface{}, ctx context.Context, spannerTransaction in
 	}
 }
 
-func (db *DB) Insert(model interface{}, spannerTransaction *spanner.ReadWriteTransaction) error {
+func (db *DB) Insert(model interface{}, ctx context.Context, spannerTransaction *spanner.ReadWriteTransaction) (int64, error) {
 	db.mu.Lock()
 	defer db.mu.Unlock()
 	db.Model(model)
-	m, err := spanner.InsertStruct(db.builder.tableName, model)
-	db.logger.Infof("Insert Mutation: %+v", m)
+	query, err := db.Model(model).builder.insertModelQuery()
 	if err != nil {
-		return err
+		return 0, errors.New("no primary key set")
 	}
-	err = spannerTransaction.BufferWrite([]*spanner.Mutation{m})
-	return err
+	stmt := spanner.Statement{SQL: query}
+	rowCount, err := spannerTransaction.Update(ctx, stmt)
+	db.logger.Infof("Update Query: %s", db.builder.query)
+	return rowCount, err
 }
 
-func (db *DB) Update(model interface{}, txn *spanner.ReadWriteTransaction) error {
+func (db *DB) Update(model interface{}, ctx context.Context, spannerTransaction *spanner.ReadWriteTransaction) (int64, error) {
 	db.mu.Lock()
 	defer db.mu.Unlock()
-	db.Model(model)
-	m, err := spanner.UpdateStruct(db.builder.tableName, model)
-	db.logger.Infof("Update Mutation: %+v", m)
+	query, err := db.Model(model).builder.updateModelQuery()
 	if err != nil {
-		return err
+		return 0, errors.New("no primary key set")
 	}
-	err = txn.BufferWrite([]*spanner.Mutation{m})
-	return err
+	stmt := spanner.Statement{SQL: query}
+	rowCount, err := spannerTransaction.Update(ctx, stmt)
+	db.logger.Infof("Update Query: %s", db.builder.query)
+	return rowCount, err
 }
 
-func (db *DB) UpdateMap(model interface{}, in map[string]interface{}, txn *spanner.ReadWriteTransaction) error {
+func (db *DB) UpdateMap(model interface{}, ctx context.Context, in map[string]interface{}, spannerTransaction *spanner.ReadWriteTransaction) (int64, error) {
 	db.mu.Lock()
 	defer db.mu.Unlock()
-	db.Model(model)
-	m := spanner.UpdateMap(db.builder.tableName, in)
-	db.logger.Infof("Update Mutation: %+v", m)
-
-	return txn.BufferWrite([]*spanner.Mutation{m})
-}
-
-func (db *DB) InsertOrUpdate(model interface{}, txn *spanner.ReadWriteTransaction) error {
-	db.mu.Lock()
-	defer db.mu.Unlock()
-	db.Model(model)
-	m, err := spanner.InsertOrUpdateStruct(db.builder.tableName, model)
-	db.logger.Infof("InsertOrUpdate Mutation: %+v", m)
+	query, err := db.Model(model).builder.updateMapQuery(in)
 	if err != nil {
-		return err
+		return 0, errors.New("no primary key set")
 	}
-	err = txn.BufferWrite([]*spanner.Mutation{m})
-	return err
-}
-
-func (db *DB) InsertOrUpdateMap(model interface{}, in map[string]interface{}, txn *spanner.ReadWriteTransaction) error {
-	db.mu.Lock()
-	defer db.mu.Unlock()
-	db.Model(model)
-	m := spanner.InsertOrUpdateMap(db.builder.tableName, in)
-	db.logger.Infof("InsertOrUpdate Mutation: %+v", m)
-
-	return txn.BufferWrite([]*spanner.Mutation{m})
+	stmt := spanner.Statement{SQL: query}
+	rowCount, err := spannerTransaction.Update(ctx, stmt)
+	db.logger.Infof("Update Query: %s", db.builder.query)
+	return rowCount, err
 }
