@@ -52,6 +52,6 @@ type ILogger interface {
 
 ## License
 
-Copyright 2021 Mercari, Inc.
+Copyright 2021 10antz, Inc.
 
 Released under the [MIT License](https://opensource.org/licenses/MIT)
