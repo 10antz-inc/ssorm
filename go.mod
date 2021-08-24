@@ -1,4 +1,4 @@
-module github.com/10antz-inc/cp-service-go/ssorm
+module github.com/10antz-inc/ssorm
 
 go 1.16
 

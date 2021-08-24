@@ -5,7 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/10antz-inc/cp-service-go/ssorm/utils"
+	"github.com/10antz-inc/ssorm/utils"
 	"google.golang.org/api/iterator"
 	"os"
 	"reflect"
@@ -245,7 +245,7 @@ func (db *DB) Find(model interface{}, ctx context.Context, spannerTransaction in
 	}
 }
 
-func (db *DB) Create(model interface{}, spannerTransaction *spanner.ReadWriteTransaction) error {
+func (db *DB) Insert(model interface{}, spannerTransaction *spanner.ReadWriteTransaction) error {
 	db.mu.Lock()
 	defer db.mu.Unlock()
 	db.Model(model)
@@ -277,6 +277,29 @@ func (db *DB) UpdateMap(model interface{}, in map[string]interface{}, txn *spann
 	db.Model(model)
 	m := spanner.UpdateMap(db.builder.tableName, in)
 	db.logger.Infof("Update Mutation: %+v", m)
+
+	return txn.BufferWrite([]*spanner.Mutation{m})
+}
+
+func (db *DB) InsertOrUpdate(model interface{}, txn *spanner.ReadWriteTransaction) error {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+	db.Model(model)
+	m, err := spanner.InsertOrUpdateStruct(db.builder.tableName, model)
+	db.logger.Infof("InsertOrUpdate Mutation: %+v", m)
+	if err != nil {
+		return err
+	}
+	err = txn.BufferWrite([]*spanner.Mutation{m})
+	return err
+}
+
+func (db *DB) InsertOrUpdateMap(model interface{}, in map[string]interface{}, txn *spanner.ReadWriteTransaction) error {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+	db.Model(model)
+	m := spanner.InsertOrUpdateMap(db.builder.tableName, in)
+	db.logger.Infof("InsertOrUpdate Mutation: %+v", m)
 
 	return txn.BufferWrite([]*spanner.Mutation{m})
 }

@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"github.com/10antz-inc/cp-service-go/ssorm/utils"
+	"github.com/10antz-inc/ssorm/utils"
 	"reflect"
 	"strings"
 )
@@ -137,7 +137,7 @@ func (builder *Builder) buildOffset() {
 }
 
 func (builder *Builder) buildWhereCondition() {
-	if builder.whereConditions == nil {
+	if builder.whereConditions == nil || len(builder.whereConditions) == 0 {
 		return
 	}
 	clause := builder.whereConditions

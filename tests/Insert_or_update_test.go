@@ -7,7 +7,7 @@ import (
 "testing"
 )
 
-func TestUpdateModel(t *testing.T) {
+func TestInsertOrUpdateStruct(t *testing.T) {
 	url := "projects/spanner-emulator/instances/test/databases/test"
 	ctx := context.Background()
 
@@ -21,8 +21,10 @@ func TestUpdateModel(t *testing.T) {
 	
 	db := ssorm.CreateDB()
 	_, err := client.ReadWriteTransaction(ctx, func(ctx context.Context, txn *spanner.ReadWriteTransaction) error {
-		err := db.Build().Insert(&insert, txn)
-		_, err = db.Build().DeleteModel(&insert, ctx, txn)
+		err := db.Build().InsertOrUpdate(&insert, txn)
+		insert.FirstName = "first23"
+		err = db.Build().InsertOrUpdate(&insert, txn)
+		//_, err = db.Build().DeleteModel(&insert, ctx, txn)
 		return err
 	})
 
@@ -31,7 +33,7 @@ func TestUpdateModel(t *testing.T) {
 	}
 }
 
-func TestUpdateMap(t *testing.T) {
+func TestInsertOrUpdateMap(t *testing.T) {
 	url := "projects/spanner-emulator/instances/test/databases/test"
 	ctx := context.Background()
 
@@ -47,7 +49,9 @@ func TestUpdateMap(t *testing.T) {
 	_, err := client.ReadWriteTransaction(ctx, func(ctx context.Context, txn *spanner.ReadWriteTransaction) error {
 		err := db.Build().Insert(&insert, txn)
 		params := map[string]interface{}{"SingerId": 23, "LastName": "test111"}
-		err = db.Build().UpdateMap(&Singers{}, params, txn)
+		err = db.Build().InsertOrUpdateMap(&Singers{}, params, txn)
+		insert.FirstName = "first23"
+		err = db.Build().InsertOrUpdateMap(&Singers{}, params, txn)
 		_, err = db.Build().DeleteModel(&insert, ctx, txn)
 		return err
 	})

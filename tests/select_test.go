@@ -3,7 +3,7 @@ package tests
 import (
 	"cloud.google.com/go/spanner"
 	"context"
-	"github.com/10antz-inc/cp-service-go/ssorm"
+	"github.com/10antz-inc/ssorm"
 	"testing"
 )
 
