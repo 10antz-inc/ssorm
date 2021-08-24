@@ -16,19 +16,17 @@ Overview
   * Count
   * Delete (Model and Condition)
 
-
-Run Test
+Test
 =========
-Config spanner-emulator && create instance && create database && insert record
-```
-. ./tests/ddl/create_datbase.sh
-```
+* Config spanner-emulator && create instance && create database && insert record
+    ```
+    . ./tests/ddl/create_datbase.sh
+    ```
 
-Run test
-=========
-```
-go test -v ./tests/...
-```
+* Run test
+    ```
+    go test -v ./tests/...
+    ```
 
 
 Custom Logger
