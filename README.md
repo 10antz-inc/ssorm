@@ -8,12 +8,12 @@ Inspired by [GORM](https://github.com/go-gorm/gorm)
 Overview
 =========
 
-* Feature ORM
-  * Insert 
+* Feature
+  * Insert (Model)
   * Update (Model and Map)
-  * Find
-  * First
-  * Count
+  * Find   (Model)
+  * First  (Model)
+  * Count  (Model)
   * Delete (Model and Condition)
 
 Test
