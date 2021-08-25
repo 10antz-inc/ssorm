@@ -29,7 +29,7 @@ func TestCreateDeleteModel(t *testing.T) {
 		_, err = db.Model(&insert).Update(ctx, txn)
 		err = db.Model(&singers).Find(ctx, txn)
 
-		_, err = db.Model(&insert).Where("SingerId = ?", 23).DeleteWhere(ctx, txn)
+		_, err = db.Model(&insert).DeleteModel(ctx, txn)
 
 		err = db.Model(&singers).Find(ctx, txn)
 		if err != nil {
