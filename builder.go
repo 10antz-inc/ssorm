@@ -108,23 +108,18 @@ func (builder *Builder) buildSubQuery() (string, error) {
 	if condition != "" {
 		builder.buildCondition()
 	}
-	
+
 	return builder.query, nil
 }
 
 func (builder *Builder) deleteModelQuery() (string, error) {
 	builder.query = fmt.Sprintf("DELETE FROM %s WHERE", builder.tableName)
 	e := utils.Indirect(reflect.ValueOf(builder.model))
-	value := reflect.TypeOf(e.Interface())
-
 	var replacement []string
 	for i := 0; i < e.NumField(); i++ {
-		tag := value.Field(i).Tag
+		tag, varName, varValue, varType := utils.ReflectValues(e, i)
 		format := "%s=%v"
 		if tag.Get("key") == "primary" {
-			varName := e.Type().Field(i).Name
-			varType := e.Type().Field(i).Type
-			varValue := e.Field(i).Interface()
 			switch varType.Kind() {
 			case reflect.String:
 				format = "%s=\"%v\""
@@ -156,9 +151,7 @@ func (builder *Builder) buildInsertModelQuery() (string, error) {
 		vals []string
 	)
 	for i := 0; i < e.NumField(); i++ {
-		varName := e.Type().Field(i).Name
-		varType := e.Type().Field(i).Type
-		varValue := e.Field(i).Interface()
+		_, varName, varValue, varType := utils.ReflectValues(e, i)
 		format := "%v"
 		cols = append(cols, fmt.Sprintf("%s", varName))
 		switch varType.Kind() {
@@ -183,28 +176,17 @@ func (builder *Builder) buildUpdateModelQuery() (string, error) {
 
 	for i := 0; i < e.NumField(); i++ {
 		tag := value.Field(i).Tag
+		tag, varName, varValue, varType := utils.ReflectValues(e, i)
+		format := "%s=%v"
+		switch varType.Kind() {
+		case reflect.String:
+			format = "%s=\"%v\""
+		}
+
 		if tag.Get("key") == "primary" {
-			varName := e.Type().Field(i).Name
-			varType := e.Type().Field(i).Type
-			varValue := e.Field(i).Interface()
-			format := "%s=%v"
-			switch varType.Kind() {
-			case reflect.String:
-				format = "%s=\"%v\""
-			}
 			replacement = append(replacement, fmt.Sprintf(format, varName, varValue))
 		} else {
-
-			varName := e.Type().Field(i).Name
-			varType := e.Type().Field(i).Type
-			varValue := e.Field(i).Interface()
-			format := "%s=%v"
-			switch varType.Kind() {
-			case reflect.String:
-				format = "%s=\"%v\""
-			}
 			updateData = append(updateData, fmt.Sprintf(format, varName, varValue))
-
 		}
 	}
 	builder.query = fmt.Sprintf("%s %s", builder.query, strings.Join(updateData, ","))
@@ -218,7 +200,6 @@ func (builder *Builder) buildUpdateModelQuery() (string, error) {
 func (builder *Builder) buildUpdateMapQuery(in []string) (string, error) {
 	builder.query = fmt.Sprintf("UPDATE %s SET", builder.tableName)
 	e := utils.Indirect(reflect.ValueOf(builder.model))
-	value := reflect.TypeOf(e.Interface())
 
 	var (
 		replacement []string
@@ -226,26 +207,16 @@ func (builder *Builder) buildUpdateMapQuery(in []string) (string, error) {
 	)
 
 	for i := 0; i < e.NumField(); i++ {
-		tag := value.Field(i).Tag
-		varName := e.Type().Field(i).Name
-		varType := e.Type().Field(i).Type
-		varValue := e.Field(i).Interface()
+		tag, varName, varValue, varType := utils.ReflectValues(e, i)
+		format := "%s=%v"
+		switch varType.Kind() {
+		case reflect.String:
+			format = "%s=\"%v\""
+		}
 		if tag.Get("key") == "primary" {
-
-			format := "%s=%v"
-			switch varType.Kind() {
-			case reflect.String:
-				format = "%s=\"%v\""
-			}
 			replacement = append(replacement, fmt.Sprintf(format, varName, varValue))
-
 		} else {
 			if utils.ArrayContains(in, varName) {
-				format := "%s=%v"
-				switch varType.Kind() {
-				case reflect.String:
-					format = "%s=\"%v\""
-				}
 				updateData = append(updateData, fmt.Sprintf(format, varName, varValue))
 			}
 		}

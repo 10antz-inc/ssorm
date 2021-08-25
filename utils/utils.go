@@ -10,7 +10,7 @@ func GetTableName(model interface{}) string {
 	if reflect.TypeOf(model).Kind() == reflect.String {
 		return model.(string)
 	}
-	
+
 	if kind := results.Kind(); kind == reflect.Slice {
 		resultType := results.Type().Elem()
 		if resultType.Kind() == reflect.Ptr {
@@ -38,11 +38,20 @@ func Indirect(reflectValue reflect.Value) reflect.Value {
 	return reflectValue
 }
 
-func ArrayContains(arr []string, str string) bool{
-	for _, v := range arr{
-		if v == str{
+func ArrayContains(arr []string, str string) bool {
+	for _, v := range arr {
+		if v == str {
 			return true
 		}
 	}
 	return false
+}
+
+func ReflectValues(reflectValue reflect.Value, i int) (reflect.StructTag, string, interface{}, reflect.Type) {
+	value := reflect.TypeOf(reflectValue.Interface())
+	tag := value.Field(i).Tag
+	varName := reflectValue.Type().Field(i).Name
+	varType := reflectValue.Type().Field(i).Type
+	varValue := reflectValue.Field(i).Interface()
+	return tag, varName, varValue, varType
 }
