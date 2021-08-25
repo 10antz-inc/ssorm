@@ -8,7 +8,7 @@ import (
 	"testing"
 )
 
-func TestCreateDeleteModel(t *testing.T) {
+func TestInsertDeleteModel(t *testing.T) {
 	url := "projects/spanner-emulator/instances/test/databases/test"
 	ctx := context.Background()
 
@@ -44,7 +44,7 @@ func TestCreateDeleteModel(t *testing.T) {
 	}
 }
 
-func TestCreateDeleteWhere(t *testing.T) {
+func TestInsertDeleteWhere(t *testing.T) {
 	url := "projects/spanner-emulator/instances/test/databases/test"
 	ctx := context.Background()
 
