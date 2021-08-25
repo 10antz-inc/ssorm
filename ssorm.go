@@ -37,13 +37,21 @@ func CreateDB(opts ...Option) *DB {
 	return db
 }
 
-func (db *DB) Build() *DB {
+func (db *DB) Model(model interface{}) *DB {
 	db.builder = &Builder{}
+	db.builder.subBuilder = &SubBuilder{}
+	db.builder.model = model
+	db.builder.tableName = utils.GetTableName(db.builder.model)
 	return db
 }
 
-func (db *DB) Model(model interface{}) *DB {
-	db.builder.setModel(model)
+func (db *DB) TableName(tableName string) *DB {
+	db.builder.tableName = tableName
+	return db
+}
+
+func (db *DB) AddSub(model interface{}, query interface{}, values ...interface{}) *DB {
+	db.builder.addSub(model, query, values)
 	return db
 }
 
@@ -72,10 +80,10 @@ func (db *DB) Limit(limit int64) *DB {
 	return db
 }
 
-func (db *DB) DeleteModel(model interface{}, ctx context.Context, spannerTransaction *spanner.ReadWriteTransaction) (int64, error) {
+func (db *DB) DeleteModel(ctx context.Context, spannerTransaction *spanner.ReadWriteTransaction) (int64, error) {
 	db.mu.Lock()
 	defer db.mu.Unlock()
-	query, err := db.Model(model).builder.deleteModelQuery()
+	query, err := db.builder.deleteModelQuery()
 	if err != nil {
 		return 0, errors.New("no primary key set")
 	}
@@ -98,12 +106,17 @@ func (db *DB) DeleteWhere(ctx context.Context, spannerTransaction *spanner.ReadW
 	return rowCount, err
 }
 
-func (db *DB) First(model interface{}, ctx context.Context, spannerTransaction interface{}) error {
+func (db *DB) First(ctx context.Context, spannerTransaction interface{}) error {
 	db.mu.Lock()
 	defer db.mu.Unlock()
 
 	db.builder.limit = 1
-	query, _ := db.Model(model).builder.selectQuery()
+	var query string
+	if db.builder.subBuilder.subModels != nil {
+		query, _ = db.builder.buildSubQuery()
+	} else {
+		query, _ = db.builder.selectQuery()
+	}
 
 	var (
 		err  error
@@ -127,12 +140,13 @@ func (db *DB) First(model interface{}, ctx context.Context, spannerTransaction i
 	for {
 		if row, err = iter.Next(); err != nil {
 			if err == iterator.Done {
-				fmt.Printf("Result: %+v", model)
+				fmt.Printf("Result: %+v", db.builder.model)
 				return nil
 			}
 			return err
 		}
-		row.ToStruct(model)
+		
+		row.ToStruct(db.builder.model)
 		break
 	}
 
@@ -181,7 +195,7 @@ func (db *DB) Count(cnt interface{}, ctx context.Context, spannerTransaction int
 	return err
 }
 
-func (db *DB) Find(model interface{}, ctx context.Context, spannerTransaction interface{}) error {
+func (db *DB) Find(ctx context.Context, spannerTransaction interface{}) error {
 	db.mu.Lock()
 	defer db.mu.Unlock()
 
@@ -194,8 +208,12 @@ func (db *DB) Find(model interface{}, ctx context.Context, spannerTransaction in
 	var (
 		isSlice, isPtr bool
 	)
-
-	query, err := db.Model(model).builder.selectQuery()
+	var query string
+	if db.builder.subBuilder.subModels != nil {
+		query, _ = db.builder.buildSubQuery()
+	} else {
+		query, _ = db.builder.selectQuery()
+	}
 	stmt := spanner.Statement{SQL: query}
 	db.logger.Infof("Select Query: %s", stmt.SQL)
 
@@ -210,7 +228,7 @@ func (db *DB) Find(model interface{}, ctx context.Context, spannerTransaction in
 
 	defer iter.Stop()
 
-	results := utils.Indirect(reflect.ValueOf(model))
+	results := utils.Indirect(reflect.ValueOf(db.builder.model))
 	var resultType reflect.Type
 	if kind := results.Kind(); kind == reflect.Slice {
 		isSlice = true
@@ -231,7 +249,7 @@ func (db *DB) Find(model interface{}, ctx context.Context, spannerTransaction in
 			}
 			return err
 		}
-		results := utils.Indirect(reflect.ValueOf(model))
+		results := utils.Indirect(reflect.ValueOf(db.builder.model))
 		elem := reflect.New(resultType).Interface()
 		row.ToStruct(elem)
 
@@ -245,11 +263,10 @@ func (db *DB) Find(model interface{}, ctx context.Context, spannerTransaction in
 	}
 }
 
-func (db *DB) Insert(model interface{}, ctx context.Context, spannerTransaction *spanner.ReadWriteTransaction) (int64, error) {
+func (db *DB) Insert(ctx context.Context, spannerTransaction *spanner.ReadWriteTransaction) (int64, error) {
 	db.mu.Lock()
 	defer db.mu.Unlock()
-	db.Model(model)
-	query, err := db.Model(model).builder.insertModelQuery()
+	query, err := db.builder.insertModelQuery()
 	if err != nil {
 		return 0, errors.New("no primary key set")
 	}
@@ -259,10 +276,10 @@ func (db *DB) Insert(model interface{}, ctx context.Context, spannerTransaction 
 	return rowCount, err
 }
 
-func (db *DB) Update(model interface{}, ctx context.Context, spannerTransaction *spanner.ReadWriteTransaction) (int64, error) {
+func (db *DB) Update(ctx context.Context, spannerTransaction *spanner.ReadWriteTransaction) (int64, error) {
 	db.mu.Lock()
 	defer db.mu.Unlock()
-	query, err := db.Model(model).builder.updateModelQuery()
+	query, err := db.builder.updateModelQuery()
 	if err != nil {
 		return 0, errors.New("no primary key set")
 	}
@@ -272,10 +289,10 @@ func (db *DB) Update(model interface{}, ctx context.Context, spannerTransaction 
 	return rowCount, err
 }
 
-func (db *DB) UpdateMap(model interface{}, ctx context.Context, in map[string]interface{}, spannerTransaction *spanner.ReadWriteTransaction) (int64, error) {
+func (db *DB) UpdateMap(ctx context.Context, in map[string]interface{}, spannerTransaction *spanner.ReadWriteTransaction) (int64, error) {
 	db.mu.Lock()
 	defer db.mu.Unlock()
-	query, err := db.Model(model).builder.updateMapQuery(in)
+	query, err := db.builder.updateMapQuery(in)
 	if err != nil {
 		return 0, errors.New("no primary key set")
 	}

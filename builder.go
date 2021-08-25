@@ -18,11 +18,18 @@ type Builder struct {
 	offset          int64
 	tableName       string
 	model           interface{}
+	subBuilder      *SubBuilder
 }
 
-func (builder *Builder) setModel(model interface{}) {
-	builder.model = model
-	builder.tableName = utils.GetTableName(builder.model)
+type SubBuilder struct {
+	subModels  []interface{}
+	conditions []map[string]interface{}
+}
+
+func (builder *Builder) addSub(model interface{}, query interface{}, values ...interface{}) {
+	builder.subBuilder.subModels = append(builder.subBuilder.subModels, model)
+	condition := map[string]interface{}{"query": query, "args": values}
+	builder.subBuilder.conditions = append(builder.subBuilder.conditions, condition)
 }
 
 func (builder *Builder) setSelects(query []string, args ...interface{}) {
@@ -49,10 +56,60 @@ func (builder *Builder) buildTableName(model ...interface{}) {
 	builder.tableName = utils.GetTableName(model)
 }
 
+func (builder *Builder) buildCondition() error {
+	condition := builder.buildWhereCondition(builder.whereConditions)
+	if condition != "" {
+		builder.query = fmt.Sprintf("%s WHERE %s", builder.query, condition)
+	}
+	builder.buildOrders()
+	builder.buildLimit()
+	builder.buildOffset()
+	return nil
+}
+
 func (builder *Builder) selectQuery() (string, error) {
 	err := builder.buildSelectQuery()
 	err = builder.buildCondition()
 	return builder.query, err
+}
+
+func (builder *Builder) buildSelectQuery() error {
+	if builder.selects != nil {
+		selectQuery := strings.Join(builder.selects, ",")
+		builder.query = fmt.Sprintf("SELECT %s FROM %s", selectQuery, builder.tableName)
+		return nil
+	}
+	builder.query = fmt.Sprintf("SELECT * FROM %s", builder.tableName)
+	return nil
+}
+
+func (builder *Builder) buildSubQuery() (string, error) {
+	if builder.selects != nil {
+		selectQuery := strings.Join(builder.selects, ",")
+		builder.query = fmt.Sprintf("SELECT %s", selectQuery)
+	}
+	builder.query = "SELECT *"
+
+	var subQueries []string
+	for i, v := range builder.subBuilder.subModels {
+		//ARRAY(SELECT AS STRUCT * FROM Albums WHERE SingerId > 12) as Albums,
+		tableName := utils.GetTableName(v)
+		query := fmt.Sprintf("SELECT AS STRUCT * FROM %s", tableName)
+		if builder.subBuilder.conditions[i] != nil {
+			condition := builder.buildWhereCondition(builder.subBuilder.conditions[i])
+			if condition != "" {
+				query = fmt.Sprintf("%s WHERE %s", query, condition)
+			}
+		}
+		query = fmt.Sprintf("ARRAY ( %s ) as %s",query, tableName)
+		subQueries = append(subQueries, query)
+	}
+	builder.query = fmt.Sprintf("%s, %s, FROM %s", builder.query, strings.Join(subQueries, ","), builder.tableName)
+	condition := builder.buildWhereCondition(builder.whereConditions)
+	if condition != "" {
+		builder.query = fmt.Sprintf("%s WHERE %s", condition)
+	}
+	return builder.query, nil
 }
 
 func (builder *Builder) insertModelQuery() (string, error) {
@@ -68,24 +125,6 @@ func (builder *Builder) updateModelQuery() (string, error) {
 func (builder *Builder) updateMapQuery(in map[string]interface{}) (string, error) {
 	builder.buildUpdateMapQuery(in)
 	return builder.query, nil
-}
-
-func (builder *Builder) buildCondition() error {
-	builder.buildWhereCondition()
-	builder.buildOrders()
-	builder.buildLimit()
-	builder.buildOffset()
-	return nil
-}
-
-func (builder *Builder) buildSelectQuery() error {
-	if builder.selects != nil {
-		selectQuery := strings.Join(builder.selects, ",")
-		builder.query = fmt.Sprintf("SELECT %s FROM %s", selectQuery, builder.tableName)
-		return nil
-	}
-	builder.query = fmt.Sprintf("SELECT * FROM %s", builder.tableName)
-	return nil
 }
 
 func (builder *Builder) deleteModelQuery() (string, error) {
@@ -117,7 +156,10 @@ func (builder *Builder) deleteModelQuery() (string, error) {
 
 func (builder *Builder) deleteWhereQuery() (string, error) {
 	builder.query = fmt.Sprintf("DELETE FROM %s", builder.tableName)
-	builder.buildWhereCondition()
+	condition := builder.buildWhereCondition(builder.whereConditions)
+	if condition != "" {
+		builder.query = fmt.Sprintf("%s WHERE %s", builder.query, condition)
+	}
 	return builder.query, nil
 }
 
@@ -251,19 +293,18 @@ func (builder *Builder) buildOffset() {
 	}
 }
 
-func (builder *Builder) buildWhereCondition() {
-	if builder.whereConditions == nil || len(builder.whereConditions) == 0 {
-		return
+func (builder *Builder) buildWhereCondition(conditions map[string]interface{}) string {
+	if conditions == nil || len(conditions) == 0 {
+		return ""
 	}
-	clause := builder.whereConditions
+	clause := conditions
 	query := clause["query"].(string)
 	args := clause["args"].([]interface{})
 
 	var replacements []string
 	for _, arg := range args {
 		format := "%v"
-		switch reflect.ValueOf(arg).Kind() {
-		case reflect.Slice: // For where("id in (?)", []int64{1,2})
+		if reflect.ValueOf(arg).Kind() == reflect.Slice {
 			if values := reflect.ValueOf(arg); values.Len() > 0 {
 				var tempMarks []string
 				var isString bool
@@ -279,11 +320,12 @@ func (builder *Builder) buildWhereCondition() {
 
 				replacements = append(replacements, strings.Join(tempMarks, ","))
 			}
-		case reflect.String:
-			format = "\"%v\""
+		} else {
+			if reflect.ValueOf(arg).Kind() == reflect.String {
+				format = "\"%v\""
+			}
+			replacements = append(replacements, fmt.Sprintf(format, arg))
 		}
-		replacements = append(replacements, fmt.Sprintf(format, arg))
-
 	}
 
 	buff := bytes.NewBuffer([]byte{})
@@ -297,5 +339,5 @@ func (builder *Builder) buildWhereCondition() {
 		}
 	}
 
-	builder.query = fmt.Sprintf("%s WHERE %s", builder.query, buff.String())
+	return buff.String()
 }

@@ -3,27 +3,26 @@ package tests
 import (
 	"cloud.google.com/go/spanner"
 	"context"
-	"fmt"
 	"github.com/10antz-inc/ssorm"
 	"testing"
 )
 
-func TestUpdateModel(t *testing.T) {
+func TestSubQueryFirst(t *testing.T) {
 	url := "projects/spanner-emulator/instances/test/databases/test"
 	ctx := context.Background()
 
 	client, _ := spanner.NewClient(ctx, url)
 	defer client.Close()
 
-	insert := Singers{}
-	insert.SingerId = 12
-	insert.FirstName = "updateModel"
-	insert.LastName = "updateFlastNameModel"
+	subSingers := Singer{}
 
 	db := ssorm.CreateDB()
 	_, err := client.ReadWriteTransaction(ctx, func(ctx context.Context, txn *spanner.ReadWriteTransaction) error {
-		count, err := db.Model(&insert).Update(ctx, txn)
-		fmt.Println(count)
+		err := db.Model(&subSingers).TableName("Singers").AddSub(Albums{}, "SingerId = ?", 12).AddSub(Concerts{}, "SingerId = ?", 12).First(ctx, txn)
+		if err != nil {
+			t.Fatalf("Error happened when delete singer, got %v", err)
+		}
+
 		return err
 	})
 
@@ -32,21 +31,23 @@ func TestUpdateModel(t *testing.T) {
 	}
 }
 
-func TestUpdateMap(t *testing.T) {
+
+func TestSubQueryFind(t *testing.T) {
 	url := "projects/spanner-emulator/instances/test/databases/test"
 	ctx := context.Background()
 
 	client, _ := spanner.NewClient(ctx, url)
 	defer client.Close()
-	insert := Singers{}
-	insert.SingerId = 12
-	insert.FirstName = "updateName"
-	insert.LastName = "updateName"
+
+	var subSingers []*Singer
+
 	db := ssorm.CreateDB()
 	_, err := client.ReadWriteTransaction(ctx, func(ctx context.Context, txn *spanner.ReadWriteTransaction) error {
-		params := map[string]interface{}{"LastName": "testMap"}
-		count, err := db.Model(&insert).UpdateMap(ctx, params, txn)
-		fmt.Println(count)
+		err := db.Model(&subSingers).TableName("Singers").AddSub(Albums{}, "SingerId = ?", 12).AddSub(Concerts{}, "SingerId = ?", 12).Find(ctx, txn)
+		if err != nil {
+			t.Fatalf("Error happened when delete singer, got %v", err)
+		}
+
 		return err
 	})
 

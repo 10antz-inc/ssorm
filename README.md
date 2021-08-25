@@ -13,6 +13,7 @@ Overview
   * First  (Model)
   * Count  (Model)
   * Delete (Model and Condition)
+  * SubQuery
 
 Test
 =========
