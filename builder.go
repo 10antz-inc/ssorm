@@ -101,7 +101,7 @@ func (builder *Builder) buildSubQuery() (string, error) {
 				query = fmt.Sprintf("%s WHERE %s", query, condition)
 			}
 		}
-		query = fmt.Sprintf("ARRAY ( %s ) as %s",query, tableName)
+		query = fmt.Sprintf("ARRAY ( %s ) as %s", query, tableName)
 		subQueries = append(subQueries, query)
 	}
 	builder.query = fmt.Sprintf("%s, %s, FROM %s", builder.query, strings.Join(subQueries, ","), builder.tableName)
@@ -109,23 +109,11 @@ func (builder *Builder) buildSubQuery() (string, error) {
 	if condition != "" {
 		builder.query = fmt.Sprintf("%s WHERE %s", condition)
 	}
-	return builder.query, nil
+	err := builder.buildCondition()
+	return builder.query, err
 }
 
-func (builder *Builder) insertModelQuery() (string, error) {
-	builder.buildInsertModelQuery()
-	return builder.query, nil
-}
 
-func (builder *Builder) updateModelQuery() (string, error) {
-	builder.buildUpdateModelQuery()
-	return builder.query, nil
-}
-
-func (builder *Builder) updateMapQuery(in map[string]interface{}) (string, error) {
-	builder.buildUpdateMapQuery(in)
-	return builder.query, nil
-}
 
 func (builder *Builder) deleteModelQuery() (string, error) {
 	builder.query = fmt.Sprintf("DELETE FROM %s WHERE", builder.tableName)
@@ -163,7 +151,7 @@ func (builder *Builder) deleteWhereQuery() (string, error) {
 	return builder.query, nil
 }
 
-func (builder *Builder) buildInsertModelQuery() error {
+func (builder *Builder) buildInsertModelQuery() (string, error) {
 	builder.query = fmt.Sprintf("INSERT INTO  %s", builder.tableName)
 	e := utils.Indirect(reflect.ValueOf(builder.model))
 	var (
@@ -183,10 +171,10 @@ func (builder *Builder) buildInsertModelQuery() error {
 		vals = append(vals, fmt.Sprintf(format, varValue))
 	}
 	builder.query = fmt.Sprintf("%s (%s) VALUES (%s)", builder.query, strings.Join(cols, ", "), strings.Join(vals, ", "))
-	return nil
+	return builder.query, nil
 }
 
-func (builder *Builder) buildUpdateModelQuery() error {
+func (builder *Builder) buildUpdateModelQuery() (string, error) {
 	builder.query = fmt.Sprintf("UPDATE %s SET", builder.tableName)
 	e := utils.Indirect(reflect.ValueOf(builder.model))
 	value := reflect.TypeOf(e.Interface())
@@ -225,12 +213,12 @@ func (builder *Builder) buildUpdateModelQuery() error {
 	builder.query = fmt.Sprintf("%s %s", builder.query, strings.Join(updateData, ","))
 	builder.query = fmt.Sprintf("%s WHERE %s ", builder.query, strings.Join(replacement, " AND "))
 	if len(replacement) == 0 {
-		return errors.New("no primary key set")
+		return "", errors.New("no primary key set")
 	}
-	return nil
+	return builder.query, nil
 }
 
-func (builder *Builder) buildUpdateMapQuery(in map[string]interface{}) error {
+func (builder *Builder) buildUpdateMapQuery(in map[string]interface{}) (string, error) {
 	builder.query = fmt.Sprintf("UPDATE %s SET", builder.tableName)
 	e := utils.Indirect(reflect.ValueOf(builder.model))
 	value := reflect.TypeOf(e.Interface())
@@ -270,9 +258,33 @@ func (builder *Builder) buildUpdateMapQuery(in map[string]interface{}) error {
 	builder.query = fmt.Sprintf("%s %s", builder.query, strings.Join(updateData, ","))
 	builder.query = fmt.Sprintf("%s WHERE %s ", builder.query, strings.Join(replacement, " AND "))
 	if len(replacement) == 0 {
-		return errors.New("no primary key set")
+		return "", errors.New("no primary key set")
 	}
-	return nil
+	return builder.query, nil
+}
+
+func (builder *Builder) buildUpdateWhereQuery(in map[string]interface{}) (string, error) {
+	builder.query = fmt.Sprintf("UPDATE %s SET", builder.tableName)
+
+	var (
+		updateData []string
+	)
+
+	for k, v := range in {
+		varType := reflect.TypeOf(v)
+		format := "%s=%v"
+		switch varType.Kind() {
+		case reflect.String:
+			format = "%s=\"%v\""
+		}
+		updateData = append(updateData, fmt.Sprintf(format, k, v))
+	}
+	builder.query = fmt.Sprintf("%s %s", builder.query, strings.Join(updateData, ","))
+	condition := builder.buildWhereCondition(builder.whereConditions)
+	if condition != "" {
+		builder.query = fmt.Sprintf("%s WHERE %s", builder.query, condition)
+	}
+	return builder.query, nil
 }
 
 func (builder *Builder) buildLimit() {

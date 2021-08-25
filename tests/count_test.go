@@ -20,7 +20,7 @@ func TestCountReadWrite(t *testing.T) {
 	)
 	db := ssorm.CreateDB()
 	_, err := client.ReadWriteTransaction(ctx, func(ctx context.Context, txn *spanner.ReadWriteTransaction) error {
-		err := db.Model(singer).Where("SingerId in (?)", []int{12, 13, 14, 15}).Count(&count, ctx, txn)
+		err := db.Model(singer).Where("SingerId in (?)", []int{12, 13, 14, 15}).Count(ctx, txn, &count)
 		return err
 	})
 
@@ -44,7 +44,7 @@ func TestCountReadOnly(t *testing.T) {
 		count  int64
 	)
 	db := ssorm.CreateDB()
-	err := db.Model(singer).Where("SingerId in (?)", []int{12, 13, 14, 15}).Count(&count, ctx, rtx)
+	err := db.Model(singer).Where("SingerId in (?)", []int{12, 13, 14, 15}).Count(ctx, rtx, &count)
 
 	if err != nil {
 		t.Fatalf("Error happened when count singers, got %v", err)

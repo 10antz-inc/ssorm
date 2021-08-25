@@ -145,7 +145,7 @@ func (db *DB) First(ctx context.Context, spannerTransaction interface{}) error {
 			}
 			return err
 		}
-		
+
 		row.ToStruct(db.builder.model)
 		break
 	}
@@ -153,7 +153,7 @@ func (db *DB) First(ctx context.Context, spannerTransaction interface{}) error {
 	return err
 }
 
-func (db *DB) Count(cnt interface{}, ctx context.Context, spannerTransaction interface{}) error {
+func (db *DB) Count(ctx context.Context, spannerTransaction interface{}, cnt interface{}) error {
 	var (
 		err  error
 		iter *spanner.RowIterator
@@ -266,7 +266,7 @@ func (db *DB) Find(ctx context.Context, spannerTransaction interface{}) error {
 func (db *DB) Insert(ctx context.Context, spannerTransaction *spanner.ReadWriteTransaction) (int64, error) {
 	db.mu.Lock()
 	defer db.mu.Unlock()
-	query, err := db.builder.insertModelQuery()
+	query, err := db.builder.buildInsertModelQuery()
 	if err != nil {
 		return 0, errors.New("no primary key set")
 	}
@@ -279,7 +279,7 @@ func (db *DB) Insert(ctx context.Context, spannerTransaction *spanner.ReadWriteT
 func (db *DB) Update(ctx context.Context, spannerTransaction *spanner.ReadWriteTransaction) (int64, error) {
 	db.mu.Lock()
 	defer db.mu.Unlock()
-	query, err := db.builder.updateModelQuery()
+	query, err := db.builder.buildUpdateModelQuery()
 	if err != nil {
 		return 0, errors.New("no primary key set")
 	}
@@ -289,10 +289,22 @@ func (db *DB) Update(ctx context.Context, spannerTransaction *spanner.ReadWriteT
 	return rowCount, err
 }
 
-func (db *DB) UpdateMap(ctx context.Context, in map[string]interface{}, spannerTransaction *spanner.ReadWriteTransaction) (int64, error) {
+func (db *DB) UpdateMap(ctx context.Context, spannerTransaction *spanner.ReadWriteTransaction, in map[string]interface{}) (int64, error) {
 	db.mu.Lock()
 	defer db.mu.Unlock()
-	query, err := db.builder.updateMapQuery(in)
+	query, err := db.builder.buildUpdateMapQuery(in)
+	if err != nil {
+		return 0, errors.New("no primary key set")
+	}
+	stmt := spanner.Statement{SQL: query}
+	rowCount, err := spannerTransaction.Update(ctx, stmt)
+	db.logger.Infof("Update Query: %s", db.builder.query)
+	return rowCount, err
+}
+func (db *DB) UpdateWhere(ctx context.Context, spannerTransaction *spanner.ReadWriteTransaction, in map[string]interface{}) (int64, error) {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+	query, err := db.builder.buildUpdateWhereQuery(in)
 	if err != nil {
 		return 0, errors.New("no primary key set")
 	}
