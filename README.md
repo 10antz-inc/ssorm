@@ -7,16 +7,17 @@ Overview
 =========
 
 * Feature
-  * Insert (Model)
-  * Update (Model and Map)
-  * Find   (Model)
-  * First  (Model)
-  * Count  (Model)
-  * Delete (Model and Condition)
-  * SubQuery
+    * Insert (Model)
+    * Update (Model and Map and Where)
+    * Find (Model)
+    * First (Model)
+    * Count (Model)
+    * Delete (Model and Where)
+    * SubQuery (Model)
 
 Test
 =========
+
 * Config spanner-emulator && create instance && create database && insert record
     ```
     . ./tests/ddl/create_datbase.sh
@@ -26,7 +27,6 @@ Test
     ```
     go test -v ./tests/...
     ```
-
 
 Custom Logger
 =========
@@ -40,12 +40,12 @@ Logger Interface
 
 ```go
 type ILogger interface {
-	Debugf(format string, args ...interface{})
-	Infof(format string, args ...interface{})
-	Warnf(format string, args ...interface{})
-	Errorf(format string, args ...interface{})
-	Fatalf(format string, args ...interface{})
-	Panicf(format string, args ...interface{})
+Debugf(format string, args ...interface{})
+Infof(format string, args ...interface{})
+Warnf(format string, args ...interface{})
+Errorf(format string, args ...interface{})
+Fatalf(format string, args ...interface{})
+Panicf(format string, args ...interface{})
 }
 ```
 
