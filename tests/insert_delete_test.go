@@ -20,7 +20,7 @@ func TestInsertDeleteModel(t *testing.T) {
 	insert.SingerId = 25
 	insert.FirstName = "first21"
 	insert.LastName = "last21"
-	insert.TestTime = spanner.NullTime{time.Now(), true}
+	
 	var singers []*Singers
 
 	db := ssorm.CreateDB()
@@ -29,6 +29,7 @@ func TestInsertDeleteModel(t *testing.T) {
 		err = db.Model(&singers).Find(ctx, txn)
 		_, err = db.Model(&insert).Insert(ctx, txn)
 		err = db.Model(&singers).Find(ctx, txn)
+		insert.TestTime = spanner.NullTime{Time: time.Now(), Valid: true}
 		_, err = db.Model(&insert).Update(ctx, txn)
 		err = db.Model(&singers).Find(ctx, txn)
 
