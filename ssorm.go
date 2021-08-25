@@ -289,7 +289,7 @@ func (db *DB) Update(ctx context.Context, spannerTransaction *spanner.ReadWriteT
 	return rowCount, err
 }
 
-func (db *DB) UpdateMap(ctx context.Context, spannerTransaction *spanner.ReadWriteTransaction, in map[string]interface{}) (int64, error) {
+func (db *DB) UpdateMap(ctx context.Context, spannerTransaction *spanner.ReadWriteTransaction, in []string) (int64, error) {
 	db.mu.Lock()
 	defer db.mu.Unlock()
 	query, err := db.builder.buildUpdateMapQuery(in)

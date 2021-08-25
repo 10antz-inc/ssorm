@@ -37,3 +37,12 @@ func Indirect(reflectValue reflect.Value) reflect.Value {
 	}
 	return reflectValue
 }
+
+func ArrayContains(arr []string, str string) bool{
+	for _, v := range arr{
+		if v == str{
+			return true
+		}
+	}
+	return false
+}

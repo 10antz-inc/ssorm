@@ -113,8 +113,6 @@ func (builder *Builder) buildSubQuery() (string, error) {
 	return builder.query, err
 }
 
-
-
 func (builder *Builder) deleteModelQuery() (string, error) {
 	builder.query = fmt.Sprintf("DELETE FROM %s WHERE", builder.tableName)
 	e := utils.Indirect(reflect.ValueOf(builder.model))
@@ -218,7 +216,7 @@ func (builder *Builder) buildUpdateModelQuery() (string, error) {
 	return builder.query, nil
 }
 
-func (builder *Builder) buildUpdateMapQuery(in map[string]interface{}) (string, error) {
+func (builder *Builder) buildUpdateMapQuery(in []string) (string, error) {
 	builder.query = fmt.Sprintf("UPDATE %s SET", builder.tableName)
 	e := utils.Indirect(reflect.ValueOf(builder.model))
 	value := reflect.TypeOf(e.Interface())
@@ -230,10 +228,11 @@ func (builder *Builder) buildUpdateMapQuery(in map[string]interface{}) (string, 
 
 	for i := 0; i < e.NumField(); i++ {
 		tag := value.Field(i).Tag
+		varName := e.Type().Field(i).Name
+		varType := e.Type().Field(i).Type
+		varValue := e.Field(i).Interface()
 		if tag.Get("key") == "primary" {
-			varName := e.Type().Field(i).Name
-			varType := e.Type().Field(i).Type
-			varValue := e.Field(i).Interface()
+
 			format := "%s=%v"
 			switch varType.Kind() {
 			case reflect.String:
@@ -242,10 +241,7 @@ func (builder *Builder) buildUpdateMapQuery(in map[string]interface{}) (string, 
 			replacement = append(replacement, fmt.Sprintf(format, varName, varValue))
 
 		} else {
-			varName := e.Type().Field(i).Name
-			if val, ok := in[varName]; ok {
-				varType := reflect.TypeOf(val)
-				varValue := val
+			if utils.ArrayContains(in, varName) {
 				format := "%s=%v"
 				switch varType.Kind() {
 				case reflect.String:

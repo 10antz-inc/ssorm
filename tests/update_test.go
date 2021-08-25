@@ -38,14 +38,15 @@ func TestUpdateMap(t *testing.T) {
 
 	client, _ := spanner.NewClient(ctx, url)
 	defer client.Close()
-	insert := Singers{}
-	insert.SingerId = 12
-	insert.FirstName = "updateName"
-	insert.LastName = "updateName"
+	update := Singers{}
+	update.SingerId = 12
+	update.FirstName = "updateName"
+	update.LastName = "updateName"
 	db := ssorm.CreateDB()
 	_, err := client.ReadWriteTransaction(ctx, func(ctx context.Context, txn *spanner.ReadWriteTransaction) error {
-		params := map[string]interface{}{"LastName": "testMap"}
-		count, err := db.Model(&insert).UpdateMap(ctx, txn, params)
+		update.LastName = "updateMapName"
+		params := []string{"LastName","FirstName"}
+		count, err := db.Model(&update).UpdateMap(ctx, txn, params)
 		fmt.Println(count)
 		return err
 	})
