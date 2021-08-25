@@ -54,12 +54,25 @@ func ReflectValues(reflectValue reflect.Value, i int) (reflect.StructTag, string
 
 func GetTimestampStr(value interface{}) string {
 	timestampStr := "NULL"
-	timestamp := time.Now().UnixNano() / int64(time.Millisecond)
-	switch value.(type) {
+	switch v := value.(type) {
 	case time.Time:
-		timestampStr = fmt.Sprintf("TIMESTAMP_MILLIS(%d)", timestamp)
+		if !v.IsZero() {
+			timestampStr = fmt.Sprintf("TIMESTAMP_MILLIS(%d)", v.UnixNano()/int64(time.Millisecond))
+		}
 	case spanner.NullTime:
-		timestampStr = fmt.Sprintf("TIMESTAMP_MILLIS(%d)", timestamp)
+		if !v.IsNull() {
+			timestampStr = fmt.Sprintf("TIMESTAMP_MILLIS(%d)", v.Time.UnixNano()/int64(time.Millisecond))
+		}
 	}
 	return timestampStr
+}
+
+func IsTime(value interface{}) bool {
+	switch value.(type) {
+	case time.Time:
+		return true
+	case spanner.NullTime:
+		return true
+	}
+	return false
 }

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/10antz-inc/ssorm"
 	"testing"
+	"time"
 )
 
 func TestInsertDeleteModel(t *testing.T) {
@@ -55,7 +56,7 @@ func TestInsertDeleteWhere(t *testing.T) {
 	insert.SingerId = 23
 	insert.FirstName = "first21"
 	insert.LastName = "last21"
-
+	insert.TestTime = time.Now()
 	db := ssorm.CreateDB()
 	_, err := client.ReadWriteTransaction(ctx, func(ctx context.Context, txn *spanner.ReadWriteTransaction) error {
 		count, err := db.Model(&insert).Insert(ctx, txn)
@@ -104,80 +105,3 @@ func TestDelete(t *testing.T) {
 	}
 }
 
-func TestSoftDelete(t *testing.T) {
-	url := "projects/spanner-emulator/instances/test/databases/test"
-	ctx := context.Background()
-
-	client, _ := spanner.NewClient(ctx, url)
-	defer client.Close()
-
-	insert := Singers{}
-	insert.SingerId = 23
-	insert.FirstName = "first21"
-	insert.LastName = "last21"
-	var singers []*Singers
-
-	db := ssorm.CreateDB()
-	_, err := client.ReadWriteTransaction(ctx, func(ctx context.Context, txn *spanner.ReadWriteTransaction) error {
-		err := db.Model(&singers).Find(ctx, txn)
-		_, err = db.Model(&insert).Insert(ctx, txn)
-
-		err = db.Model(&singers).Find(ctx, txn)
-
-		_, err = db.Model(&insert).SoftDeleteModel(ctx, txn)
-
-		err = db.Model(&singers).Find(ctx, txn)
-
-		_, err = db.Model(&insert).DeleteModel(ctx, txn)
-
-		err = db.Model(&singers).Find(ctx, txn)
-		if err != nil {
-			t.Fatalf("Error happened when delete singer, got %v", err)
-		}
-
-		return err
-	})
-
-	if err != nil {
-		t.Fatalf("Error happened when create singer, got %v", err)
-	}
-}
-
-func TestSoftDeleteWhere(t *testing.T) {
-	url := "projects/spanner-emulator/instances/test/databases/test"
-	ctx := context.Background()
-
-	client, _ := spanner.NewClient(ctx, url)
-	defer client.Close()
-
-	insert := Singers{}
-	insert.SingerId = 23
-	insert.FirstName = "first21"
-	insert.LastName = "last21"
-	var singers []*Singers
-
-	db := ssorm.CreateDB()
-	_, err := client.ReadWriteTransaction(ctx, func(ctx context.Context, txn *spanner.ReadWriteTransaction) error {
-		err := db.Model(&singers).Find(ctx, txn)
-		_, err = db.Model(&insert).Insert(ctx, txn)
-
-		err = db.Model(&singers).Find(ctx, txn)
-
-		_, err = db.Model(&insert).Where("SingerId = ?", 23).SoftDeleteWhere(ctx, txn)
-
-		err = db.Model(&singers).Find(ctx, txn)
-
-		_, err = db.Model(&insert).DeleteModel(ctx, txn)
-
-		err = db.Model(&singers).Find(ctx, txn)
-		if err != nil {
-			t.Fatalf("Error happened when delete singer, got %v", err)
-		}
-
-		return err
-	})
-
-	if err != nil {
-		t.Fatalf("Error happened when create singer, got %v", err)
-	}
-}
