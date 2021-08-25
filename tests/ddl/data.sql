@@ -5,9 +5,9 @@ CREATE TABLE Singers
     LastName        STRING(1024),
     TestTime        TIMESTAMP,
     TestSpannerTime TIMESTAMP,
-    DeleteTime      TIMESTAMP,
     CreateTime      TIMESTAMP NOT NULL,
-    UpdateTime      TIMESTAMP NOT NULL OPTIONS(allow_commit_timestamp= true)
+    UpdateTime      TIMESTAMP NOT NULL OPTIONS(allow_commit_timestamp= true),
+    DeleteTime      TIMESTAMP
 ) PRIMARY KEY (SingerId);
 
 CREATE TABLE Albums

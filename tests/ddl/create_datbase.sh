@@ -11,6 +11,8 @@ gcloud spanner databases create test --instance test
 
 SPANNER_EMULATOR_HOST=localhost:9010 spanner-cli -p spanner-emulator -i test -d test -f ./tests/ddl/data.sql
 
+SPANNER_EMULATOR_HOST=localhost:9010 spanner-cli -p spanner-emulator -i test -d test 
+
 
 
 

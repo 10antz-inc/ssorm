@@ -9,11 +9,11 @@ type Singers struct {
 	SingerId        int64 `ssorm_key:"primary"`
 	FirstName       string
 	LastName        string
-	TestTime        time.Time
-	TestSpannerTime spanner.NullTime
-	DeleteTime      spanner.NullTime `ssorm_key:"delete_time"`
-	CreateTime      time.Time        `ssorm_key:"create_time"`
-	UpdateTime      time.Time        `ssorm_key:"update_time"`
+	TestTime        spanner.NullTime `spanner:"TestTime"`
+	TestSpannerTime spanner.NullTime `spanner:"TestSpannerTime"`
+	DeleteTime      spanner.NullTime `spanner:"DeleteTime" ssorm_key:"delete_time"`
+	CreateTime      time.Time        `spanner:"CreateTime" ssorm_key:"create_time"`
+	UpdateTime      time.Time        `spanner:"UpdateTime" ssorm_key:"update_time"`
 }
 
 type Singer struct {

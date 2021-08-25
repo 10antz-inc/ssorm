@@ -17,26 +17,33 @@ func TestInsertDeleteModel(t *testing.T) {
 	defer client.Close()
 
 	insert := Singers{}
-	insert.SingerId = 23
+	insert.SingerId = 25
 	insert.FirstName = "first21"
 	insert.LastName = "last21"
+	insert.TestTime = spanner.NullTime{time.Now(), true}
 	var singers []*Singers
 
 	db := ssorm.CreateDB()
 	_, err := client.ReadWriteTransaction(ctx, func(ctx context.Context, txn *spanner.ReadWriteTransaction) error {
 		err := db.Model(&singers).Find(ctx, txn)
+		err = db.Model(&singers).Find(ctx, txn)
 		_, err = db.Model(&insert).Insert(ctx, txn)
-
+		err = db.Model(&singers).Find(ctx, txn)
 		_, err = db.Model(&insert).Update(ctx, txn)
 		err = db.Model(&singers).Find(ctx, txn)
 
 		_, err = db.Model(&insert).DeleteModel(ctx, txn)
 
-		err = db.Model(&singers).Find(ctx, txn)
+		err = db.Model(&insert).First(ctx, txn)
 		if err != nil {
 			t.Fatalf("Error happened when delete singer, got %v", err)
 		}
 
+		return err
+	})
+
+	_, err = client.ReadWriteTransaction(ctx, func(ctx context.Context, txn *spanner.ReadWriteTransaction) error {
+		err := db.Model(&singers).Find(ctx, txn)
 		return err
 	})
 
@@ -56,7 +63,7 @@ func TestInsertDeleteWhere(t *testing.T) {
 	insert.SingerId = 23
 	insert.FirstName = "first21"
 	insert.LastName = "last21"
-	insert.TestTime = time.Now()
+	//insert.TestTime = time.Now()
 	db := ssorm.CreateDB()
 	_, err := client.ReadWriteTransaction(ctx, func(ctx context.Context, txn *spanner.ReadWriteTransaction) error {
 		count, err := db.Model(&insert).Insert(ctx, txn)
@@ -104,4 +111,3 @@ func TestDelete(t *testing.T) {
 		t.Fatalf("Error happened when create singer, got %v", err)
 	}
 }
-

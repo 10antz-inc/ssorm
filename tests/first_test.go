@@ -15,6 +15,7 @@ func TestGetAllColumnReadWrite(t *testing.T) {
 	defer client.Close()
 
 	singer := Singers{}
+	//singer.TestTime = time.Now()
 	db := ssorm.CreateDB()
 	_, err := client.ReadWriteTransaction(ctx, func(ctx context.Context, txn *spanner.ReadWriteTransaction) error {
 		err := db.Model(&singer).Where("SingerId in (?)", []int{12, 13, 14}).First(ctx, txn)
