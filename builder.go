@@ -92,7 +92,6 @@ func (builder *Builder) buildSubQuery() (string, error) {
 
 	var subQueries []string
 	for i, v := range builder.subBuilder.subModels {
-		//ARRAY(SELECT AS STRUCT * FROM Albums WHERE SingerId > 12) as Albums,
 		tableName := utils.GetTableName(v)
 		query := fmt.Sprintf("SELECT AS STRUCT * FROM %s", tableName)
 		if builder.subBuilder.conditions[i] != nil {
