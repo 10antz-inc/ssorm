@@ -107,10 +107,10 @@ func (builder *Builder) buildSubQuery() (string, error) {
 	builder.query = fmt.Sprintf("%s, %s, FROM %s", builder.query, strings.Join(subQueries, ","), builder.tableName)
 	condition := builder.buildWhereCondition(builder.whereConditions)
 	if condition != "" {
-		builder.query = fmt.Sprintf("%s WHERE %s", condition)
+		builder.buildCondition()
 	}
-	err := builder.buildCondition()
-	return builder.query, err
+	
+	return builder.query, nil
 }
 
 func (builder *Builder) deleteModelQuery() (string, error) {

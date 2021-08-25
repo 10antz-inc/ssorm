@@ -43,7 +43,7 @@ func TestSubQueryFind(t *testing.T) {
 
 	db := ssorm.CreateDB()
 	_, err := client.ReadWriteTransaction(ctx, func(ctx context.Context, txn *spanner.ReadWriteTransaction) error {
-		err := db.Model(&subSingers).TableName("Singers").AddSub(Albums{}, "SingerId = ?", 12).AddSub(Concerts{}, "SingerId = ?", 12).Find(ctx, txn)
+		err := db.Model(&subSingers).Where("SingerId > ?", 12).TableName("Singers").AddSub(Albums{}, "SingerId > ?", 12).AddSub(Concerts{}, "SingerId > ?", 12).Find(ctx, txn)
 		if err != nil {
 			t.Fatalf("Error happened when delete singer, got %v", err)
 		}
