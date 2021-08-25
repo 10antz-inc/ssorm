@@ -214,7 +214,7 @@ func (db *DB) Find(ctx context.Context, spannerTransaction interface{}) error {
 
 	defer iter.Stop()
 
-	results := utils.Indirect(reflect.ValueOf(db.builder.model))
+	results := reflect.Indirect(reflect.ValueOf(db.builder.model))
 	var resultType reflect.Type
 	if kind := results.Kind(); kind == reflect.Slice {
 		isSlice = true
@@ -235,7 +235,7 @@ func (db *DB) Find(ctx context.Context, spannerTransaction interface{}) error {
 			}
 			return err
 		}
-		results := utils.Indirect(reflect.ValueOf(db.builder.model))
+		results := reflect.Indirect(reflect.ValueOf(db.builder.model))
 		elem := reflect.New(resultType).Interface()
 		row.ToStruct(elem)
 

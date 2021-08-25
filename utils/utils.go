@@ -5,7 +5,7 @@ import (
 )
 
 func GetTableName(model interface{}) string {
-	results := Indirect(reflect.ValueOf(model))
+	results := reflect.Indirect(reflect.ValueOf(model))
 
 	if reflect.TypeOf(model).Kind() == reflect.String {
 		return model.(string)
@@ -29,13 +29,6 @@ func GetTableName(model interface{}) string {
 	}
 
 	return results.Type().Name()
-}
-
-func Indirect(reflectValue reflect.Value) reflect.Value {
-	for reflectValue.Kind() == reflect.Ptr {
-		reflectValue = reflectValue.Elem()
-	}
-	return reflectValue
 }
 
 func ArrayContains(arr []string, str string) bool {

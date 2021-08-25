@@ -114,7 +114,7 @@ func (builder *Builder) buildSubQuery() (string, error) {
 
 func (builder *Builder) deleteModelQuery() (string, error) {
 	builder.query = fmt.Sprintf("DELETE FROM %s WHERE", builder.tableName)
-	e := utils.Indirect(reflect.ValueOf(builder.model))
+	e := reflect.Indirect(reflect.ValueOf(builder.model))
 	var replacement []string
 	for i := 0; i < e.NumField(); i++ {
 		tag, varName, varValue, varType := utils.ReflectValues(e, i)
@@ -145,7 +145,7 @@ func (builder *Builder) deleteWhereQuery() (string, error) {
 
 func (builder *Builder) buildInsertModelQuery() (string, error) {
 	builder.query = fmt.Sprintf("INSERT INTO  %s", builder.tableName)
-	e := utils.Indirect(reflect.ValueOf(builder.model))
+	e := reflect.Indirect(reflect.ValueOf(builder.model))
 	var (
 		cols []string
 		vals []string
@@ -166,7 +166,7 @@ func (builder *Builder) buildInsertModelQuery() (string, error) {
 
 func (builder *Builder) buildUpdateModelQuery() (string, error) {
 	builder.query = fmt.Sprintf("UPDATE %s SET", builder.tableName)
-	e := utils.Indirect(reflect.ValueOf(builder.model))
+	e := reflect.Indirect(reflect.ValueOf(builder.model))
 	value := reflect.TypeOf(e.Interface())
 
 	var (
@@ -199,7 +199,7 @@ func (builder *Builder) buildUpdateModelQuery() (string, error) {
 
 func (builder *Builder) buildUpdateMapQuery(in []string) (string, error) {
 	builder.query = fmt.Sprintf("UPDATE %s SET", builder.tableName)
-	e := utils.Indirect(reflect.ValueOf(builder.model))
+	e := reflect.Indirect(reflect.ValueOf(builder.model))
 
 	var (
 		replacement []string
