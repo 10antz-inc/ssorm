@@ -36,10 +36,11 @@ func CreateDB(opts ...Option) *DB {
 }
 
 func (db *DB) Model(model interface{}) *DB {
-	db.builder = &Builder{}
-	db.builder.subBuilder = &SubBuilder{}
-	db.builder.model = model
-	db.builder.tableName = utils.GetTableName(db.builder.model)
+	db.builder = &Builder{
+		subBuilder: &SubBuilder{},
+		model:      model,
+		tableName:  utils.GetTableName(model),
+	}
 	return db
 }
 
