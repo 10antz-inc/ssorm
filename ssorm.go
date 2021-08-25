@@ -80,25 +80,43 @@ func (db *DB) Limit(limit int64) *DB {
 }
 
 func (db *DB) DeleteModel(ctx context.Context, spannerTransaction *spanner.ReadWriteTransaction) (int64, error) {
+	var (
+		rowCount int64
+		err      error
+	)
+
 	query, err := db.builder.deleteModelQuery()
 	if err != nil {
 		return 0, errors.New("no primary key set")
 	}
 	stmt := spanner.Statement{SQL: query}
-	rowCount, err := spannerTransaction.Update(ctx, stmt)
+	rowCount, err = spannerTransaction.Update(ctx, stmt)
 	db.logger.Infof("Delete Query: %s", db.builder.query)
 	return rowCount, err
 }
 
 func (db *DB) DeleteWhere(ctx context.Context, spannerTransaction *spanner.ReadWriteTransaction) (int64, error) {
+	var (
+		rowCount int64
+		err      error
+	)
+
 	query, err := db.builder.deleteWhereQuery()
 	if err != nil {
 		return 0, errors.New("no primary key set")
 	}
 	stmt := spanner.Statement{SQL: query}
-	rowCount, err := spannerTransaction.Update(ctx, stmt)
+	rowCount, err = spannerTransaction.Update(ctx, stmt)
 	db.logger.Infof("Delete Query: %s", db.builder.query)
 	return rowCount, err
+}
+
+func (db *DB) SoftDeleteModel(ctx context.Context, spannerTransaction *spanner.ReadWriteTransaction) (int64, error) {
+	return db.update(ctx, spannerTransaction, true)
+}
+
+func (db *DB) SoftDeleteWhere(ctx context.Context, spannerTransaction *spanner.ReadWriteTransaction) (int64, error) {
+	return db.updateWhere(ctx, spannerTransaction, map[string]interface{}{}, true)
 }
 
 func (db *DB) First(ctx context.Context, spannerTransaction interface{}) error {
@@ -262,18 +280,11 @@ func (db *DB) Insert(ctx context.Context, spannerTransaction *spanner.ReadWriteT
 }
 
 func (db *DB) Update(ctx context.Context, spannerTransaction *spanner.ReadWriteTransaction) (int64, error) {
-	query, err := db.builder.buildUpdateModelQuery()
-	if err != nil {
-		return 0, errors.New("no primary key set")
-	}
-	stmt := spanner.Statement{SQL: query}
-	rowCount, err := spannerTransaction.Update(ctx, stmt)
-	db.logger.Infof("Update Query: %s", db.builder.query)
-	return rowCount, err
+	return db.update(ctx, spannerTransaction, false)
 }
 
 func (db *DB) UpdateMap(ctx context.Context, spannerTransaction *spanner.ReadWriteTransaction, in []string) (int64, error) {
-	query, err := db.builder.buildUpdateMapQuery(in)
+	query, err := db.builder.buildUpdateMapQuery(in, false)
 	if err != nil {
 		return 0, errors.New("no primary key set")
 	}
@@ -283,7 +294,22 @@ func (db *DB) UpdateMap(ctx context.Context, spannerTransaction *spanner.ReadWri
 	return rowCount, err
 }
 func (db *DB) UpdateWhere(ctx context.Context, spannerTransaction *spanner.ReadWriteTransaction, in map[string]interface{}) (int64, error) {
-	query, err := db.builder.buildUpdateWhereQuery(in)
+	return db.updateWhere(ctx, spannerTransaction, in, false)
+}
+
+func (db *DB) update(ctx context.Context, spannerTransaction *spanner.ReadWriteTransaction, softDelete bool) (int64, error) {
+	query, err := db.builder.buildUpdateModelQuery(softDelete)
+	if err != nil {
+		return 0, errors.New("no primary key set")
+	}
+	stmt := spanner.Statement{SQL: query}
+	rowCount, err := spannerTransaction.Update(ctx, stmt)
+	db.logger.Infof("Update Query: %s", db.builder.query)
+	return rowCount, err
+}
+
+func (db *DB) updateWhere(ctx context.Context, spannerTransaction *spanner.ReadWriteTransaction, in map[string]interface{}, softDelete bool) (int64, error) {
+	query, err := db.builder.buildUpdateWhereQuery(in, softDelete)
 	if err != nil {
 		return 0, errors.New("no primary key set")
 	}

@@ -2,6 +2,9 @@ CREATE TABLE Singers (
                          SingerId   INT64 NOT NULL,
                          FirstName  STRING(1024),
                          LastName   STRING(1024),
+                         DeleteTime TIMESTAMP,
+                         CreateTime TIMESTAMP NOT NULL,
+                         UpdateTime TIMESTAMP NOT NULL OPTIONS(allow_commit_timestamp=true)
 ) PRIMARY KEY (SingerId);
 
 CREATE TABLE Albums (
@@ -19,10 +22,10 @@ CREATE TABLE Concerts (
 
 
 
-INSERT Singers (SingerId, FirstName, LastName) VALUES (12, 'Melissa', 'Garcia');
-INSERT Singers (SingerId, FirstName, LastName) VALUES (13, 'Russell', 'Morales');
-INSERT Singers (SingerId, FirstName, LastName) VALUES (14, 'Jacqueline', 'Long');
-INSERT Singers (SingerId, FirstName, LastName) VALUES (15, 'Dylan', 'Shaw');
+INSERT Singers (SingerId, FirstName, LastName,UpdateTime,CreateTime) VALUES (12, 'Melissa', 'Garcia',CURRENT_TIMESTAMP() ,CURRENT_TIMESTAMP() );
+INSERT Singers (SingerId, FirstName, LastName,UpdateTime,CreateTime) VALUES (13, 'Russell', 'Morales',CURRENT_TIMESTAMP() ,CURRENT_TIMESTAMP() );
+INSERT Singers (SingerId, FirstName, LastName,UpdateTime,CreateTime) VALUES (14, 'Jacqueline', 'Long',CURRENT_TIMESTAMP() ,CURRENT_TIMESTAMP() );
+INSERT Singers (SingerId, FirstName, LastName,UpdateTime,CreateTime) VALUES (15, 'Dylan', 'Shaw',CURRENT_TIMESTAMP() ,CURRENT_TIMESTAMP() );
 
 
 INSERT Albums (SingerId, AlbumId, Title) VALUES (12, 1, 'Garcia');

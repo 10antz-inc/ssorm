@@ -1,7 +1,10 @@
 package utils
 
 import (
+	"cloud.google.com/go/spanner"
+	"fmt"
 	"reflect"
+	"time"
 )
 
 func GetTableName(model interface{}) string {
@@ -47,4 +50,16 @@ func ReflectValues(reflectValue reflect.Value, i int) (reflect.StructTag, string
 	varType := reflectValue.Type().Field(i).Type
 	varValue := reflectValue.Field(i).Interface()
 	return tag, varName, varValue, varType
+}
+
+func GetTimestampStr(value interface{}) string {
+	timestampStr := "NULL"
+	timestamp := time.Now().UnixNano() / int64(time.Millisecond)
+	switch value.(type) {
+	case time.Time:
+		timestampStr = fmt.Sprintf("TIMESTAMP_MILLIS(%d)", timestamp)
+	case spanner.NullTime:
+		timestampStr = fmt.Sprintf("TIMESTAMP_MILLIS(%d)", timestamp)
+	}
+	return timestampStr
 }

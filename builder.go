@@ -119,7 +119,7 @@ func (builder *Builder) deleteModelQuery() (string, error) {
 	for i := 0; i < e.NumField(); i++ {
 		tag, varName, varValue, varType := utils.ReflectValues(e, i)
 		format := "%s=%v"
-		if tag.Get("key") == "primary" {
+		if tag.Get(SSORM_TAG_KEY) == SSORM_TAG_PRIMARY {
 			switch varType.Kind() {
 			case reflect.String:
 				format = "%s=\"%v\""
@@ -151,23 +151,38 @@ func (builder *Builder) buildInsertModelQuery() (string, error) {
 		vals []string
 	)
 	for i := 0; i < e.NumField(); i++ {
-		_, varName, varValue, varType := utils.ReflectValues(e, i)
+		addColumn := true
+		tag, varName, varValue, varType := utils.ReflectValues(e, i)
 		format := "%v"
-		cols = append(cols, fmt.Sprintf("%s", varName))
-		switch varType.Kind() {
-		case reflect.String:
-			format = "\"%v\""
+		switch tag.Get(SSORM_TAG_KEY) {
+		case SSORM_TAG_CREATE_TIME:
+			varValue = utils.GetTimestampStr(varValue)
+			break
+		case SSORM_TAG_UPDATE_TIME:
+			varValue = utils.GetTimestampStr(varValue)
+			break
+		case SSORM_TAG_DELETE_TIME:
+			addColumn = false
+			break
 		}
-		vals = append(vals, fmt.Sprintf(format, varValue))
+
+		if addColumn {
+			cols = append(cols, fmt.Sprintf("%s", varName))
+			switch varType.Kind() {
+			case reflect.String:
+				format = "\"%v\""
+			}
+			vals = append(vals, fmt.Sprintf(format, varValue))
+		}
+
 	}
 	builder.query = fmt.Sprintf("%s (%s) VALUES (%s)", builder.query, strings.Join(cols, ", "), strings.Join(vals, ", "))
 	return builder.query, nil
 }
 
-func (builder *Builder) buildUpdateModelQuery() (string, error) {
+func (builder *Builder) buildUpdateModelQuery(isDelete bool) (string, error) {
 	builder.query = fmt.Sprintf("UPDATE %s SET", builder.tableName)
 	e := reflect.Indirect(reflect.ValueOf(builder.model))
-	value := reflect.TypeOf(e.Interface())
 
 	var (
 		replacement []string
@@ -175,19 +190,30 @@ func (builder *Builder) buildUpdateModelQuery() (string, error) {
 	)
 
 	for i := 0; i < e.NumField(); i++ {
-		tag := value.Field(i).Tag
 		tag, varName, varValue, varType := utils.ReflectValues(e, i)
 		format := "%s=%v"
 		switch varType.Kind() {
 		case reflect.String:
 			format = "%s=\"%v\""
 		}
-
-		if tag.Get("key") == "primary" {
+		switch tag.Get(SSORM_TAG_KEY) {
+		case SSORM_TAG_PRIMARY:
 			replacement = append(replacement, fmt.Sprintf(format, varName, varValue))
-		} else {
+			break
+		case SSORM_TAG_UPDATE_TIME:
+			updateData = append(updateData, fmt.Sprintf(format, varName, utils.GetTimestampStr(varValue)))
+			break
+		case SSORM_TAG_CREATE_TIME:
+			break
+		case SSORM_TAG_DELETE_TIME:
+			if isDelete {
+				updateData = append(updateData, fmt.Sprintf(format, varName, utils.GetTimestampStr(varValue)))
+			}
+			break
+		default:
 			updateData = append(updateData, fmt.Sprintf(format, varName, varValue))
 		}
+
 	}
 	builder.query = fmt.Sprintf("%s %s", builder.query, strings.Join(updateData, ","))
 	builder.query = fmt.Sprintf("%s WHERE %s ", builder.query, strings.Join(replacement, " AND "))
@@ -197,7 +223,7 @@ func (builder *Builder) buildUpdateModelQuery() (string, error) {
 	return builder.query, nil
 }
 
-func (builder *Builder) buildUpdateMapQuery(in []string) (string, error) {
+func (builder *Builder) buildUpdateMapQuery(in []string, isDelete bool) (string, error) {
 	builder.query = fmt.Sprintf("UPDATE %s SET", builder.tableName)
 	e := reflect.Indirect(reflect.ValueOf(builder.model))
 
@@ -213,13 +239,25 @@ func (builder *Builder) buildUpdateMapQuery(in []string) (string, error) {
 		case reflect.String:
 			format = "%s=\"%v\""
 		}
-		if tag.Get("key") == "primary" {
+
+		switch tag.Get(SSORM_TAG_KEY) {
+		case SSORM_TAG_PRIMARY:
 			replacement = append(replacement, fmt.Sprintf(format, varName, varValue))
-		} else {
-			if utils.ArrayContains(in, varName) {
-				updateData = append(updateData, fmt.Sprintf(format, varName, varValue))
+			break
+		case SSORM_TAG_CREATE_TIME:
+			break
+		case SSORM_TAG_DELETE_TIME:
+			if isDelete {
+				updateData = append(updateData, fmt.Sprintf(format, varName, utils.GetTimestampStr(varValue)))
 			}
+			break
+		case SSORM_TAG_UPDATE_TIME:
+			updateData = append(updateData, fmt.Sprintf(format, varName, utils.GetTimestampStr(varValue)))
+			break
+		default:
+			updateData = append(updateData, fmt.Sprintf(format, varName, varValue))
 		}
+
 	}
 	builder.query = fmt.Sprintf("%s %s", builder.query, strings.Join(updateData, ","))
 	builder.query = fmt.Sprintf("%s WHERE %s ", builder.query, strings.Join(replacement, " AND "))
@@ -229,7 +267,7 @@ func (builder *Builder) buildUpdateMapQuery(in []string) (string, error) {
 	return builder.query, nil
 }
 
-func (builder *Builder) buildUpdateWhereQuery(in map[string]interface{}) (string, error) {
+func (builder *Builder) buildUpdateWhereQuery(in map[string]interface{}, isDelete bool) (string, error) {
 	builder.query = fmt.Sprintf("UPDATE %s SET", builder.tableName)
 
 	var (
@@ -244,6 +282,27 @@ func (builder *Builder) buildUpdateWhereQuery(in map[string]interface{}) (string
 			format = "%s=\"%v\""
 		}
 		updateData = append(updateData, fmt.Sprintf(format, k, v))
+	}
+
+	e := reflect.Indirect(reflect.ValueOf(builder.model))
+	for i := 0; i < e.NumField(); i++ {
+		tag, varName, varValue, varType := utils.ReflectValues(e, i)
+		format := "%s=%v"
+		switch varType.Kind() {
+		case reflect.String:
+			format = "%s=\"%v\""
+		}
+
+		switch tag.Get(SSORM_TAG_KEY) {
+		case SSORM_TAG_UPDATE_TIME:
+			updateData = append(updateData, fmt.Sprintf(format, varName, utils.GetTimestampStr(varValue)))
+			break
+		case SSORM_TAG_DELETE_TIME:
+			if isDelete {
+				updateData = append(updateData, fmt.Sprintf(format, varName, utils.GetTimestampStr(varValue)))
+			}
+		}
+
 	}
 	builder.query = fmt.Sprintf("%s %s", builder.query, strings.Join(updateData, ","))
 	condition := builder.buildWhereCondition(builder.whereConditions)

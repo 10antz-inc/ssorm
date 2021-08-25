@@ -1,9 +1,17 @@
 package tests
 
+import (
+	"cloud.google.com/go/spanner"
+	"time"
+)
+
 type Singers struct {
-	SingerId  int64 `key:"primary"`
-	FirstName string
-	LastName  string
+	SingerId   int64 			`ssorm_key:"primary"`
+	FirstName  string
+	LastName   string
+	DeleteTime spanner.NullTime `ssorm_key:"delete_time"`
+	CreateTime time.Time        `ssorm_key:"create_time"`
+	UpdateTime time.Time        `ssorm_key:"update_time"`
 }
 
 type Singer struct {
