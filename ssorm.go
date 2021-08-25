@@ -9,7 +9,6 @@ import (
 	"google.golang.org/api/iterator"
 	"os"
 	"reflect"
-	"sync"
 )
 
 type Option func(*DB)
@@ -21,13 +20,12 @@ func Logger(l ILogger) Option {
 }
 
 type DB struct {
-	mu      sync.RWMutex
 	builder *Builder
 	logger  ILogger
 }
 
 func CreateDB(opts ...Option) *DB {
-	db := &DB{mu: sync.RWMutex{}}
+	db := &DB{}
 	for _, opt := range opts {
 		opt(db)
 	}
@@ -81,8 +79,6 @@ func (db *DB) Limit(limit int64) *DB {
 }
 
 func (db *DB) DeleteModel(ctx context.Context, spannerTransaction *spanner.ReadWriteTransaction) (int64, error) {
-	db.mu.Lock()
-	defer db.mu.Unlock()
 	query, err := db.builder.deleteModelQuery()
 	if err != nil {
 		return 0, errors.New("no primary key set")
@@ -94,8 +90,6 @@ func (db *DB) DeleteModel(ctx context.Context, spannerTransaction *spanner.ReadW
 }
 
 func (db *DB) DeleteWhere(ctx context.Context, spannerTransaction *spanner.ReadWriteTransaction) (int64, error) {
-	db.mu.Lock()
-	defer db.mu.Unlock()
 	query, err := db.builder.deleteWhereQuery()
 	if err != nil {
 		return 0, errors.New("no primary key set")
@@ -107,8 +101,6 @@ func (db *DB) DeleteWhere(ctx context.Context, spannerTransaction *spanner.ReadW
 }
 
 func (db *DB) First(ctx context.Context, spannerTransaction interface{}) error {
-	db.mu.Lock()
-	defer db.mu.Unlock()
 
 	db.builder.limit = 1
 	var query string
@@ -162,10 +154,6 @@ func (db *DB) Count(ctx context.Context, spannerTransaction interface{}, cnt int
 	if db.builder.tableName == "" {
 		return errors.New("Undefined table name. please set db.Model(&struct{})")
 	}
-
-	db.mu.Lock()
-	defer db.mu.Unlock()
-
 	query, err := db.Select([]string{"COUNT(1) AS CNT"}).builder.selectQuery()
 
 	stmt := spanner.Statement{SQL: query}
@@ -196,8 +184,6 @@ func (db *DB) Count(ctx context.Context, spannerTransaction interface{}, cnt int
 }
 
 func (db *DB) Find(ctx context.Context, spannerTransaction interface{}) error {
-	db.mu.Lock()
-	defer db.mu.Unlock()
 
 	var (
 		err  error
@@ -264,8 +250,6 @@ func (db *DB) Find(ctx context.Context, spannerTransaction interface{}) error {
 }
 
 func (db *DB) Insert(ctx context.Context, spannerTransaction *spanner.ReadWriteTransaction) (int64, error) {
-	db.mu.Lock()
-	defer db.mu.Unlock()
 	query, err := db.builder.buildInsertModelQuery()
 	if err != nil {
 		return 0, errors.New("no primary key set")
@@ -277,8 +261,6 @@ func (db *DB) Insert(ctx context.Context, spannerTransaction *spanner.ReadWriteT
 }
 
 func (db *DB) Update(ctx context.Context, spannerTransaction *spanner.ReadWriteTransaction) (int64, error) {
-	db.mu.Lock()
-	defer db.mu.Unlock()
 	query, err := db.builder.buildUpdateModelQuery()
 	if err != nil {
 		return 0, errors.New("no primary key set")
@@ -290,8 +272,6 @@ func (db *DB) Update(ctx context.Context, spannerTransaction *spanner.ReadWriteT
 }
 
 func (db *DB) UpdateMap(ctx context.Context, spannerTransaction *spanner.ReadWriteTransaction, in []string) (int64, error) {
-	db.mu.Lock()
-	defer db.mu.Unlock()
 	query, err := db.builder.buildUpdateMapQuery(in)
 	if err != nil {
 		return 0, errors.New("no primary key set")
@@ -302,8 +282,6 @@ func (db *DB) UpdateMap(ctx context.Context, spannerTransaction *spanner.ReadWri
 	return rowCount, err
 }
 func (db *DB) UpdateWhere(ctx context.Context, spannerTransaction *spanner.ReadWriteTransaction, in map[string]interface{}) (int64, error) {
-	db.mu.Lock()
-	defer db.mu.Unlock()
 	query, err := db.builder.buildUpdateWhereQuery(in)
 	if err != nil {
 		return 0, errors.New("no primary key set")
