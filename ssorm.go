@@ -272,7 +272,7 @@ func (db *DB) Insert(ctx context.Context, spannerTransaction *spanner.ReadWriteT
 	}
 	stmt := spanner.Statement{SQL: query}
 	rowCount, err := spannerTransaction.Update(ctx, stmt)
-	db.logger.Infof("Update Query: %s", db.builder.query)
+	db.logger.Infof("Insert Query: %s", db.builder.query)
 	return rowCount, err
 }
 
