@@ -127,7 +127,7 @@ func (db *DB) DeleteWhere(ctx context.Context, spannerTransaction *spanner.ReadW
 	if db.builder.softDelete {
 		query, err = db.builder.buildDeleteWhereQuery()
 		if err != nil {
-			return 0, errors.New("no primary key set")
+			return 0, err
 		}
 		stmt := spanner.Statement{SQL: query}
 		rowCount, err := spannerTransaction.Update(ctx, stmt)

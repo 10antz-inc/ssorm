@@ -143,7 +143,11 @@ func (builder *Builder) deleteModelQuery() (string, error) {
 }
 
 func (builder *Builder) deleteWhereQuery() (string, error) {
+	if builder.whereConditions == nil || len(builder.whereConditions) == 0 {
+		return "", errors.New("no delete condition set")
+	}
 	builder.query = fmt.Sprintf("DELETE FROM %s", builder.tableName)
+	
 	condition := builder.buildWhereCondition(builder.whereConditions)
 	if condition != "" {
 		builder.query = fmt.Sprintf("%s WHERE %s", builder.query, condition)
@@ -337,6 +341,9 @@ func (builder *Builder) buildUpdateMapQuery(in []string) (string, error) {
 }
 
 func (builder *Builder) buildUpdateWhereQuery(in map[string]interface{}) (string, error) {
+	if builder.whereConditions == nil || len(builder.whereConditions) == 0 {
+		return "", errors.New("no update condition set")
+	}
 	builder.query = fmt.Sprintf("UPDATE %s SET", builder.tableName)
 
 	var (
@@ -379,7 +386,9 @@ func (builder *Builder) buildUpdateWhereQuery(in map[string]interface{}) (string
 }
 
 func (builder *Builder) buildDeleteWhereQuery() (string, error) {
-	
+	if builder.whereConditions == nil || len(builder.whereConditions) == 0 {
+		return "", errors.New("no delete condition set")
+	}
 	builder.query = fmt.Sprintf("UPDATE %s SET", builder.tableName)
 
 	var (
