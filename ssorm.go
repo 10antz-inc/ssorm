@@ -316,8 +316,8 @@ func (db *DB) Update(ctx context.Context, spannerTransaction *spanner.ReadWriteT
 	return rowCount, err
 }
 
-func (db *DB) UpdateMap(ctx context.Context, spannerTransaction *spanner.ReadWriteTransaction, in []string) (int64, error) {
-	query, err := db.builder.buildUpdateMapQuery(in)
+func (db *DB) UpdateColumns(ctx context.Context, spannerTransaction *spanner.ReadWriteTransaction, in []string) (int64, error) {
+	query, err := db.builder.buildUpdateColumnQuery(in)
 	if err != nil {
 		return 0, errors.New("no primary key set")
 	}

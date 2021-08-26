@@ -299,7 +299,7 @@ func (builder *Builder) buildUpdateModelQuery() (string, error) {
 	return builder.query, nil
 }
 
-func (builder *Builder) buildUpdateMapQuery(in []string) (string, error) {
+func (builder *Builder) buildUpdateColumnQuery(in []string) (string, error) {
 	builder.query = fmt.Sprintf("UPDATE %s SET", builder.tableName)
 	e := reflect.Indirect(reflect.ValueOf(builder.model))
 

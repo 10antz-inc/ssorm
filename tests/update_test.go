@@ -45,8 +45,8 @@ func TestUpdateMap(t *testing.T) {
 	db := ssorm.CreateDB()
 	_, err := client.ReadWriteTransaction(ctx, func(ctx context.Context, txn *spanner.ReadWriteTransaction) error {
 		update.LastName = "updateMapName"
-		params := []string{"LastName","FirstName"}
-		count, err := db.Model(&update).UpdateMap(ctx, txn, params)
+		columns := []string{"LastName","FirstName"}
+		count, err := db.Model(&update).UpdateColumns(ctx, txn, columns)
 		fmt.Println(count)
 		return err
 	})
