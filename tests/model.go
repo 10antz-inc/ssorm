@@ -6,8 +6,8 @@ import (
 )
 
 type Singers struct {
-	SingerId        int64 `ssorm_key:"primary"`
-	FirstName       string
+	SingerId        int64  `ssorm_key:"primary"`
+	FirstName       string `spanner:"FirstName"`
 	LastName        string
 	TestTime        spanner.NullTime `spanner:"TestTime"` //NULL を許容する場合必ず、spanner.NullTimeを指定すること
 	TestSpannerTime spanner.NullTime `spanner:"TestSpannerTime"`

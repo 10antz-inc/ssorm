@@ -89,9 +89,13 @@ func ArrayContains(arr []string, str string) bool {
 func ReflectValues(reflectValue reflect.Value, i int) (reflect.StructTag, string, interface{}, reflect.Type) {
 	value := reflect.TypeOf(reflectValue.Interface())
 	tag := value.Field(i).Tag
-	varName := reflectValue.Type().Field(i).Name
+	varName := tag.Get(SPANER_KEY)
+	if varName == "" {
+		varName = reflectValue.Type().Field(i).Name
+	}
 	varType := reflectValue.Type().Field(i).Type
 	varValue := reflectValue.Field(i).Interface()
+
 	return tag, varName, varValue, varType
 }
 
