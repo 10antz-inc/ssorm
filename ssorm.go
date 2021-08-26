@@ -92,7 +92,6 @@ func (db *DB) Limit(limit int64) *DB {
 
 func (db *DB) DeleteModel(ctx context.Context, spannerTransaction *spanner.ReadWriteTransaction) (int64, error) {
 	var (
-		rowCount int64
 		err      error
 		query    string
 	)
@@ -110,17 +109,14 @@ func (db *DB) DeleteModel(ctx context.Context, spannerTransaction *spanner.ReadW
 
 	query, err = db.builder.buildDeleteModelQuery()
 	if err != nil {
-		return 0, errors.New("no primary key set")
+		return 0, err
 	}
-	stmt := spanner.Statement{SQL: query}
-	rowCount, err = spannerTransaction.Update(ctx, stmt)
-	db.logger.Infof("Delete Query: %s", db.builder.query)
-	return rowCount, err
+	db.logger.Infof("DELETE Query: %s", db.builder.query)
+	return db.spannerUpdate(query, ctx, spannerTransaction)
 }
 
 func (db *DB) DeleteWhere(ctx context.Context, spannerTransaction *spanner.ReadWriteTransaction) (int64, error) {
 	var (
-		rowCount int64
 		err      error
 		query    string
 	)
@@ -137,12 +133,10 @@ func (db *DB) DeleteWhere(ctx context.Context, spannerTransaction *spanner.ReadW
 
 	query, err = db.builder.buildDeleteWhereQuery()
 	if err != nil {
-		return 0, errors.New("no primary key set")
+		return 0, err
 	}
-	stmt := spanner.Statement{SQL: query}
-	rowCount, err = spannerTransaction.Update(ctx, stmt)
-	db.logger.Infof("Delete Query: %s", db.builder.query)
-	return rowCount, err
+	db.logger.Infof("DELETE Query: %s", db.builder.query)
+	return db.spannerUpdate(query, ctx, spannerTransaction)
 }
 
 func (db *DB) First(ctx context.Context, spannerTransaction interface{}) error {
@@ -297,42 +291,42 @@ func (db *DB) Find(ctx context.Context, spannerTransaction interface{}) error {
 func (db *DB) Insert(ctx context.Context, spannerTransaction *spanner.ReadWriteTransaction) (int64, error) {
 	query, err := db.builder.buildInsertModelQuery()
 	if err != nil {
-		return 0, errors.New("no primary key set")
+		return 0, err
 	}
-	stmt := spanner.Statement{SQL: query}
-	rowCount, err := spannerTransaction.Update(ctx, stmt)
 	db.logger.Infof("Insert Query: %s", db.builder.query)
-	return rowCount, err
+	return db.spannerUpdate(query, ctx, spannerTransaction)
+
 }
 
 func (db *DB) Update(ctx context.Context, spannerTransaction *spanner.ReadWriteTransaction) (int64, error) {
 	query, err := db.builder.buildUpdateModelQuery()
 	if err != nil {
-		return 0, errors.New("no primary key set")
+		return 0, err
 	}
-	stmt := spanner.Statement{SQL: query}
-	rowCount, err := spannerTransaction.Update(ctx, stmt)
 	db.logger.Infof("Update Query: %s", db.builder.query)
-	return rowCount, err
+	return db.spannerUpdate(query, ctx, spannerTransaction)
+	
 }
 
 func (db *DB) UpdateColumns(ctx context.Context, spannerTransaction *spanner.ReadWriteTransaction, in []string) (int64, error) {
 	query, err := db.builder.buildUpdateColumnQuery(in)
 	if err != nil {
-		return 0, errors.New("no primary key set")
+		return 0, err
 	}
-	stmt := spanner.Statement{SQL: query}
-	rowCount, err := spannerTransaction.Update(ctx, stmt)
 	db.logger.Infof("Update Query: %s", db.builder.query)
-	return rowCount, err
+	return db.spannerUpdate(query, ctx, spannerTransaction)
 }
 func (db *DB) UpdateWhere(ctx context.Context, spannerTransaction *spanner.ReadWriteTransaction, in map[string]interface{}) (int64, error) {
 	query, err := db.builder.buildUpdateWhereQuery(in)
 	if err != nil {
-		return 0, errors.New("no primary key set")
+		return 0, err
 	}
+	db.logger.Infof("Update Query: %s", db.builder.query)
+	return db.spannerUpdate(query, ctx, spannerTransaction)
+}
+
+func (db *DB) spannerUpdate(query string, ctx context.Context, spannerTransaction *spanner.ReadWriteTransaction) (int64, error) {
 	stmt := spanner.Statement{SQL: query}
 	rowCount, err := spannerTransaction.Update(ctx, stmt)
-	db.logger.Infof("Update Query: %s", db.builder.query)
 	return rowCount, err
 }
