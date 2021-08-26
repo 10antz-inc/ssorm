@@ -4,6 +4,7 @@ import (
 	"cloud.google.com/go/spanner"
 	"context"
 	"github.com/10antz-inc/ssorm"
+	"github.com/10antz-inc/ssorm/utils"
 	"testing"
 )
 
@@ -34,6 +35,9 @@ func TestSelectAllColumnReadWrite(t *testing.T) {
 	defer client.Close()
 
 	var singers []*Singers
+	test := Singers{}
+	utils.GetDeleteColumnName(&singers)
+	utils.GetDeleteColumnName(&test)
 	db := ssorm.CreateDB()
 	_, err := client.ReadWriteTransaction(ctx, func(ctx context.Context, txn *spanner.ReadWriteTransaction) error {
 		err := db.Model(&singers).Where("SingerId in (?)", []int{12, 13, 14}).Find(ctx, txn)

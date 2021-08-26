@@ -1,4 +1,4 @@
-package ssorm
+package utils
 
 const SSORM_TAG_KEY string = "ssorm_key"
 const SSORM_TAG_PRIMARY string = "primary"

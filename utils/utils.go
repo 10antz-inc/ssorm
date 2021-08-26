@@ -34,6 +34,49 @@ func GetTableName(model interface{}) string {
 	return results.Type().Name()
 }
 
+func GetDeleteColumnName(model interface{}) string {
+	results := reflect.Indirect(reflect.ValueOf(model))
+	if kind := results.Kind(); kind == reflect.Slice {
+		resultType := results.Type().Elem()
+		if resultType.Kind() == reflect.Ptr {
+			resultType = resultType.Elem()
+			elem := reflect.New(resultType).Interface()
+			e := reflect.Indirect(reflect.ValueOf(elem))
+			for i := 0; i < e.NumField(); i++ {
+				tag, varName, _, _ := ReflectValues(e, i)
+				if tag.Get(SSORM_TAG_KEY) == SSORM_TAG_DELETE_TIME {
+					return varName
+				}
+			}
+		}
+		return ""
+	}
+
+	if reflect.TypeOf(model).Kind() == reflect.Ptr {
+		modelType := reflect.TypeOf(model)
+		modelValue := reflect.New(modelType.Elem()).Interface()
+		e := reflect.Indirect(reflect.ValueOf(modelValue))
+		for i := 0; i < e.NumField(); i++ {
+			tag, varName, _, _ := ReflectValues(e, i)
+			if tag.Get(SSORM_TAG_KEY) == SSORM_TAG_DELETE_TIME {
+				return varName
+			}
+		}
+	}
+
+	if reflect.TypeOf(model).Kind() == reflect.Struct {
+		e := reflect.Indirect(reflect.ValueOf(model))
+		for i := 0; i < e.NumField(); i++ {
+			tag, varName, _, _ := ReflectValues(e, i)
+			if tag.Get(SSORM_TAG_KEY) == SSORM_TAG_DELETE_TIME {
+				return varName
+			}
+		}
+	}
+
+	return ""
+}
+
 func ArrayContains(arr []string, str string) bool {
 	for _, v := range arr {
 		if v == str {

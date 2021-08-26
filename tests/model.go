@@ -17,20 +17,23 @@ type Singers struct {
 }
 
 type Singer struct {
-	SingerId  int64 `key:"primary"`
-	FirstName string
-	LastName  string
-	Albums    []*Albums
-	Concerts  []*Concerts
+	SingerId   int64 `key:"primary"`
+	FirstName  string
+	LastName   string
+	Albums     []*Albums
+	Concerts   []*Concerts
+	DeleteTime spanner.NullTime `spanner:"DeleteTime" ssorm_key:"delete_time"`
 }
 
 type Albums struct {
-	SingerId int64
-	AlbumId  int64
-	Title    string
+	SingerId   int64
+	AlbumId    int64
+	Title      string
+	DeleteTime spanner.NullTime `spanner:"DeleteTime" ssorm_key:"delete_time"`
 }
 type Concerts struct {
-	SingerId  int64
-	ConcertId int64
-	Price     int64
+	SingerId   int64
+	ConcertId  int64
+	Price      int64
+	DeleteTime spanner.NullTime `spanner:"DeleteTime" ssorm_key:"delete_time"`
 }

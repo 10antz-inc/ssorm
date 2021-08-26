@@ -40,6 +40,17 @@ func (db *DB) Model(model interface{}) *DB {
 		subBuilder: &SubBuilder{},
 		model:      model,
 		tableName:  utils.GetTableName(model),
+		softDelete: false,
+	}
+	return db
+}
+
+func (db *DB) SoftModel(model interface{}) *DB {
+	db.builder = &Builder{
+		subBuilder: &SubBuilder{},
+		model:      model,
+		tableName:  utils.GetTableName(model),
+		softDelete: true,
 	}
 	return db
 }
@@ -83,9 +94,21 @@ func (db *DB) DeleteModel(ctx context.Context, spannerTransaction *spanner.ReadW
 	var (
 		rowCount int64
 		err      error
+		query    string
 	)
 
-	query, err := db.builder.deleteModelQuery()
+	if db.builder.softDelete {
+		query, err = db.builder.buildSoftDeleteModelQuery()
+		if err != nil {
+			return 0, errors.New("no primary key set")
+		}
+		stmt := spanner.Statement{SQL: query}
+		rowCount, err := spannerTransaction.Update(ctx, stmt)
+		db.logger.Infof("Update Query: %s", db.builder.query)
+		return rowCount, err
+	}
+
+	query, err = db.builder.deleteModelQuery()
 	if err != nil {
 		return 0, errors.New("no primary key set")
 	}
@@ -99,9 +122,20 @@ func (db *DB) DeleteWhere(ctx context.Context, spannerTransaction *spanner.ReadW
 	var (
 		rowCount int64
 		err      error
+		query    string
 	)
+	if db.builder.softDelete {
+		query, err = db.builder.buildDeleteWhereQuery()
+		if err != nil {
+			return 0, errors.New("no primary key set")
+		}
+		stmt := spanner.Statement{SQL: query}
+		rowCount, err := spannerTransaction.Update(ctx, stmt)
+		db.logger.Infof("Update Query: %s", db.builder.query)
+		return rowCount, err
+	}
 
-	query, err := db.builder.deleteWhereQuery()
+	query, err = db.builder.deleteWhereQuery()
 	if err != nil {
 		return 0, errors.New("no primary key set")
 	}
@@ -302,4 +336,3 @@ func (db *DB) UpdateWhere(ctx context.Context, spannerTransaction *spanner.ReadW
 	db.logger.Infof("Update Query: %s", db.builder.query)
 	return rowCount, err
 }
-
