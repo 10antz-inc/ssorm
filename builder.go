@@ -41,7 +41,7 @@ func (builder *Builder) addSub(model interface{}, query interface{}, values ...i
 	builder.subBuilder.conditions = append(builder.subBuilder.conditions, condition)
 }
 
-func (builder *Builder) setSelects(query []string, args ...interface{}) {
+func (builder *Builder) setSelects(query []string) {
 	builder.selects = query
 }
 

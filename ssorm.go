@@ -65,8 +65,8 @@ func (db *DB) AddSub(model interface{}, query interface{}, values ...interface{}
 	return db
 }
 
-func (db *DB) Select(query []string, args ...interface{}) *DB {
-	db.builder.setSelects(query, args)
+func (db *DB) Select(query []string) *DB {
+	db.builder.setSelects(query)
 	return db
 }
 
