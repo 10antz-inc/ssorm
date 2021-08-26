@@ -14,6 +14,7 @@ Overview
     * Count (Model)
     * Delete (Model and Where)
     * SubQuery (Model)
+    * SoftDelete
 
 Test
 =========
