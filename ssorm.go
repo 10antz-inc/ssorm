@@ -45,7 +45,7 @@ func (db *DB) Model(model interface{}) *DB {
 	return db
 }
 
-func (db *DB) SoftModel(model interface{}) *DB {
+func (db *DB) SoftDeleteModel(model interface{}) *DB {
 	db.builder = &Builder{
 		subBuilder: &SubBuilder{},
 		model:      model,
