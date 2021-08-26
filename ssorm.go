@@ -108,7 +108,7 @@ func (db *DB) DeleteModel(ctx context.Context, spannerTransaction *spanner.ReadW
 		return rowCount, err
 	}
 
-	query, err = db.builder.deleteModelQuery()
+	query, err = db.builder.buildDeleteModelQuery()
 	if err != nil {
 		return 0, errors.New("no primary key set")
 	}
@@ -125,7 +125,7 @@ func (db *DB) DeleteWhere(ctx context.Context, spannerTransaction *spanner.ReadW
 		query    string
 	)
 	if db.builder.softDelete {
-		query, err = db.builder.buildDeleteWhereQuery()
+		query, err = db.builder.buildSoftDeleteWhereQuery()
 		if err != nil {
 			return 0, err
 		}
@@ -135,7 +135,7 @@ func (db *DB) DeleteWhere(ctx context.Context, spannerTransaction *spanner.ReadW
 		return rowCount, err
 	}
 
-	query, err = db.builder.deleteWhereQuery()
+	query, err = db.builder.buildDeleteWhereQuery()
 	if err != nil {
 		return 0, errors.New("no primary key set")
 	}

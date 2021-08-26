@@ -66,6 +66,93 @@ func (builder *Builder) buildTableName(model ...interface{}) {
 
 }
 
+func (builder *Builder) buildLimit() {
+	if builder.limit > 0 {
+		builder.query = fmt.Sprintf("%s %s %d", builder.query, "LIMIT", builder.limit)
+	}
+}
+
+func (builder *Builder) buildOrders() {
+	if builder.orders != "" {
+		builder.query = fmt.Sprintf("%s %s %s", builder.query, "ORDER BY", builder.orders)
+	}
+}
+
+func (builder *Builder) buildOffset() {
+	if builder.offset > 0 {
+		builder.query = fmt.Sprintf("%s %s %d", builder.query, "OFFSET", builder.offset)
+	}
+}
+
+func (builder *Builder) buildWhereCondition(conditions map[string]interface{}) string {
+
+	var deleteColumn string
+	if conditions == nil || len(conditions) == 0 {
+		if !builder.softDelete {
+			return ""
+		}
+	}
+	if builder.softDelete {
+		deleteColumn = utils.GetDeleteColumnName(builder.model)
+		if deleteColumn != "" {
+			if conditions == nil || len(conditions) == 0 {
+				conditions = map[string]interface{}{}
+				conditions["query"] = fmt.Sprintf("%s IS NULL", deleteColumn)
+				conditions["args"] = []interface{}{}
+			} else {
+				if conditions["query"] == "" {
+					conditions["query"] = fmt.Sprintf("%s IS NULL", deleteColumn)
+				} else {
+					conditions["query"] = fmt.Sprintf("%s AND %s IS NULL", conditions["query"], deleteColumn)
+				}
+
+			}
+		}
+	}
+	clause := conditions
+	query := clause["query"].(string)
+	args := clause["args"].([]interface{})
+
+	var replacements []string
+	for _, arg := range args {
+		format := "%v"
+		if reflect.ValueOf(arg).Kind() == reflect.Slice {
+			if values := reflect.ValueOf(arg); values.Len() > 0 {
+				var tempMarks []string
+				var isString bool
+				for i := 0; i < values.Len(); i++ {
+					isString = values.Index(i).Kind() == reflect.String
+					if isString {
+						strValue := fmt.Sprintf("\"%s\"", fmt.Sprint(values.Index(i)))
+						tempMarks = append(tempMarks, strValue)
+					} else {
+						tempMarks = append(tempMarks, fmt.Sprint(values.Index(i)))
+					}
+				}
+
+				replacements = append(replacements, strings.Join(tempMarks, ","))
+			}
+		} else {
+			if reflect.ValueOf(arg).Kind() == reflect.String {
+				format = "\"%v\""
+			}
+			replacements = append(replacements, fmt.Sprintf(format, arg))
+		}
+	}
+
+	buff := bytes.NewBuffer([]byte{})
+	i := 0
+	for _, s := range query {
+		if s == '?' && len(replacements) > i {
+			buff.WriteString(replacements[i])
+			i++
+		} else {
+			buff.WriteRune(s)
+		}
+	}
+	return buff.String()
+}
+
 func (builder *Builder) buildCondition() error {
 	condition := builder.buildWhereCondition(builder.whereConditions)
 	if condition != "" {
@@ -117,41 +204,6 @@ func (builder *Builder) buildSubQuery() (string, error) {
 
 	builder.buildCondition()
 
-	return builder.query, nil
-}
-
-func (builder *Builder) deleteModelQuery() (string, error) {
-	builder.query = fmt.Sprintf("DELETE FROM %s WHERE", builder.tableName)
-	e := reflect.Indirect(reflect.ValueOf(builder.model))
-	var replacement []string
-	for i := 0; i < e.NumField(); i++ {
-		tag, varName, varValue, varType := utils.ReflectValues(e, i)
-		format := "%s=%v"
-		if tag.Get(utils.SSORM_TAG_KEY) == utils.SSORM_TAG_PRIMARY {
-			switch varType.Kind() {
-			case reflect.String:
-				format = "%s=\"%v\""
-			}
-			replacement = append(replacement, fmt.Sprintf(format, varName, varValue))
-		}
-	}
-	builder.query = fmt.Sprintf("%s %s", builder.query, strings.Join(replacement, " AND "))
-	if len(replacement) == 0 {
-		return "", errors.New("no primary key set")
-	}
-	return builder.query, nil
-}
-
-func (builder *Builder) deleteWhereQuery() (string, error) {
-	if builder.whereConditions == nil || len(builder.whereConditions) == 0 {
-		return "", errors.New("no delete condition set")
-	}
-	builder.query = fmt.Sprintf("DELETE FROM %s", builder.tableName)
-	
-	condition := builder.buildWhereCondition(builder.whereConditions)
-	if condition != "" {
-		builder.query = fmt.Sprintf("%s WHERE %s", builder.query, condition)
-	}
 	return builder.query, nil
 }
 
@@ -247,42 +299,6 @@ func (builder *Builder) buildUpdateModelQuery() (string, error) {
 	return builder.query, nil
 }
 
-func (builder *Builder) buildSoftDeleteModelQuery() (string, error) {
-	builder.query = fmt.Sprintf("UPDATE %s SET", builder.tableName)
-	e := reflect.Indirect(reflect.ValueOf(builder.model))
-
-	var (
-		conditions []string
-		updateData []string
-	)
-
-	for i := 0; i < e.NumField(); i++ {
-		tag, varName, varValue, varType := utils.ReflectValues(e, i)
-		format := "%s=%v"
-		switch varType.Kind() {
-		case reflect.String:
-			format = "%s=\"%v\""
-		}
-		switch tag.Get(utils.SSORM_TAG_KEY) {
-		case utils.SSORM_TAG_PRIMARY:
-			conditions = append(conditions, fmt.Sprintf(format, varName, varValue))
-			break
-		case utils.SSORM_TAG_UPDATE_TIME:
-			updateData = append(updateData, fmt.Sprintf(format, varName, "CURRENT_TIMESTAMP()"))
-			break
-		case utils.SSORM_TAG_CREATE_TIME:
-			break
-		case utils.SSORM_TAG_DELETE_TIME:
-			updateData = append(updateData, fmt.Sprintf(format, varName, "CURRENT_TIMESTAMP()"))
-			break
-		}
-
-	}
-	builder.query = fmt.Sprintf("%s %s", builder.query, strings.Join(updateData, ","))
-	builder.query = fmt.Sprintf("%s WHERE %s ", builder.query, strings.Join(conditions, " AND "))
-	return builder.query, nil
-}
-
 func (builder *Builder) buildUpdateMapQuery(in []string) (string, error) {
 	builder.query = fmt.Sprintf("UPDATE %s SET", builder.tableName)
 	e := reflect.Indirect(reflect.ValueOf(builder.model))
@@ -339,7 +355,6 @@ func (builder *Builder) buildUpdateMapQuery(in []string) (string, error) {
 	}
 	return builder.query, nil
 }
-
 func (builder *Builder) buildUpdateWhereQuery(in map[string]interface{}) (string, error) {
 	if builder.whereConditions == nil || len(builder.whereConditions) == 0 {
 		return "", errors.New("no update condition set")
@@ -385,7 +400,78 @@ func (builder *Builder) buildUpdateWhereQuery(in map[string]interface{}) (string
 	return builder.query, nil
 }
 
+func (builder *Builder) buildDeleteModelQuery() (string, error) {
+	builder.query = fmt.Sprintf("DELETE FROM %s WHERE", builder.tableName)
+	e := reflect.Indirect(reflect.ValueOf(builder.model))
+	var replacement []string
+	for i := 0; i < e.NumField(); i++ {
+		tag, varName, varValue, varType := utils.ReflectValues(e, i)
+		format := "%s=%v"
+		if tag.Get(utils.SSORM_TAG_KEY) == utils.SSORM_TAG_PRIMARY {
+			switch varType.Kind() {
+			case reflect.String:
+				format = "%s=\"%v\""
+			}
+			replacement = append(replacement, fmt.Sprintf(format, varName, varValue))
+		}
+	}
+	builder.query = fmt.Sprintf("%s %s", builder.query, strings.Join(replacement, " AND "))
+	if len(replacement) == 0 {
+		return "", errors.New("no primary key set")
+	}
+	return builder.query, nil
+}
+
 func (builder *Builder) buildDeleteWhereQuery() (string, error) {
+	if builder.whereConditions == nil || len(builder.whereConditions) == 0 {
+		return "", errors.New("no delete condition set")
+	}
+	builder.query = fmt.Sprintf("DELETE FROM %s", builder.tableName)
+
+	condition := builder.buildWhereCondition(builder.whereConditions)
+	if condition != "" {
+		builder.query = fmt.Sprintf("%s WHERE %s", builder.query, condition)
+	}
+	return builder.query, nil
+}
+
+func (builder *Builder) buildSoftDeleteModelQuery() (string, error) {
+	builder.query = fmt.Sprintf("UPDATE %s SET", builder.tableName)
+	e := reflect.Indirect(reflect.ValueOf(builder.model))
+
+	var (
+		conditions []string
+		updateData []string
+	)
+
+	for i := 0; i < e.NumField(); i++ {
+		tag, varName, varValue, varType := utils.ReflectValues(e, i)
+		format := "%s=%v"
+		switch varType.Kind() {
+		case reflect.String:
+			format = "%s=\"%v\""
+		}
+		switch tag.Get(utils.SSORM_TAG_KEY) {
+		case utils.SSORM_TAG_PRIMARY:
+			conditions = append(conditions, fmt.Sprintf(format, varName, varValue))
+			break
+		case utils.SSORM_TAG_UPDATE_TIME:
+			updateData = append(updateData, fmt.Sprintf(format, varName, "CURRENT_TIMESTAMP()"))
+			break
+		case utils.SSORM_TAG_CREATE_TIME:
+			break
+		case utils.SSORM_TAG_DELETE_TIME:
+			updateData = append(updateData, fmt.Sprintf(format, varName, "CURRENT_TIMESTAMP()"))
+			break
+		}
+
+	}
+	builder.query = fmt.Sprintf("%s %s", builder.query, strings.Join(updateData, ","))
+	builder.query = fmt.Sprintf("%s WHERE %s ", builder.query, strings.Join(conditions, " AND "))
+	return builder.query, nil
+}
+
+func (builder *Builder) buildSoftDeleteWhereQuery() (string, error) {
 	if builder.whereConditions == nil || len(builder.whereConditions) == 0 {
 		return "", errors.New("no delete condition set")
 	}
@@ -419,91 +505,4 @@ func (builder *Builder) buildDeleteWhereQuery() (string, error) {
 		builder.query = fmt.Sprintf("%s WHERE %s", builder.query, condition)
 	}
 	return builder.query, nil
-}
-
-func (builder *Builder) buildLimit() {
-	if builder.limit > 0 {
-		builder.query = fmt.Sprintf("%s %s %d", builder.query, "LIMIT", builder.limit)
-	}
-}
-
-func (builder *Builder) buildOrders() {
-	if builder.orders != "" {
-		builder.query = fmt.Sprintf("%s %s %s", builder.query, "ORDER BY", builder.orders)
-	}
-}
-
-func (builder *Builder) buildOffset() {
-	if builder.offset > 0 {
-		builder.query = fmt.Sprintf("%s %s %d", builder.query, "OFFSET", builder.offset)
-	}
-}
-
-func (builder *Builder) buildWhereCondition(conditions map[string]interface{}) string {
-
-	var deleteColumn string
-	if conditions == nil || len(conditions) == 0 {
-		if !builder.softDelete {
-			return ""
-		}
-	}
-	if builder.softDelete {
-		deleteColumn = utils.GetDeleteColumnName(builder.model)
-		if deleteColumn != "" {
-			if conditions == nil || len(conditions) == 0 {
-				conditions = map[string]interface{}{}
-				conditions["query"] = fmt.Sprintf("%s IS NULL", deleteColumn)
-				conditions["args"] = []interface{}{}
-			} else {
-				if conditions["query"] == "" {
-					conditions["query"] = fmt.Sprintf("%s IS NULL", deleteColumn)
-				} else {
-					conditions["query"] = fmt.Sprintf("%s AND %s IS NULL", conditions["query"], deleteColumn)
-				}
-
-			}
-		}
-	}
-	clause := conditions
-	query := clause["query"].(string)
-	args := clause["args"].([]interface{})
-
-	var replacements []string
-	for _, arg := range args {
-		format := "%v"
-		if reflect.ValueOf(arg).Kind() == reflect.Slice {
-			if values := reflect.ValueOf(arg); values.Len() > 0 {
-				var tempMarks []string
-				var isString bool
-				for i := 0; i < values.Len(); i++ {
-					isString = values.Index(i).Kind() == reflect.String
-					if isString {
-						strValue := fmt.Sprintf("\"%s\"", fmt.Sprint(values.Index(i)))
-						tempMarks = append(tempMarks, strValue)
-					} else {
-						tempMarks = append(tempMarks, fmt.Sprint(values.Index(i)))
-					}
-				}
-
-				replacements = append(replacements, strings.Join(tempMarks, ","))
-			}
-		} else {
-			if reflect.ValueOf(arg).Kind() == reflect.String {
-				format = "\"%v\""
-			}
-			replacements = append(replacements, fmt.Sprintf(format, arg))
-		}
-	}
-
-	buff := bytes.NewBuffer([]byte{})
-	i := 0
-	for _, s := range query {
-		if s == '?' && len(replacements) > i {
-			buff.WriteString(replacements[i])
-			i++
-		} else {
-			buff.WriteRune(s)
-		}
-	}
-	return buff.String()
 }
