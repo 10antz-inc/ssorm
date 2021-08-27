@@ -69,7 +69,7 @@ func TestUpdateWhere(t *testing.T) {
 	db := ssorm.CreateDB()
 	_, err := client.ReadWriteTransaction(ctx, func(ctx context.Context, txn *spanner.ReadWriteTransaction) error {
 		params := map[string]interface{}{"LastName": "testWhreMap"}
-		count, err := db.Model(&insert).Where("SingerId > ?", 13).UpdateWhere(ctx, txn, params)
+		count, err := db.Model(&insert).Where("SingerId > ?", 13).UpdateParams(ctx, txn, params)
 		fmt.Println(count)
 		return err
 	})

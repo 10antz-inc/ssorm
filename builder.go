@@ -355,7 +355,7 @@ func (builder *Builder) buildUpdateColumnQuery(in []string) (string, error) {
 	}
 	return builder.query, nil
 }
-func (builder *Builder) buildUpdateWhereQuery(in map[string]interface{}) (string, error) {
+func (builder *Builder) buildUpdateParamsQuery(in map[string]interface{}) (string, error) {
 	if builder.whereConditions == nil || len(builder.whereConditions) == 0 {
 		return "", errors.New("no update condition set")
 	}

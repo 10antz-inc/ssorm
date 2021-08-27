@@ -316,8 +316,8 @@ func (db *DB) UpdateColumns(ctx context.Context, spannerTransaction *spanner.Rea
 	db.logger.Infof("Update Query: %s", db.builder.query)
 	return db.spannerUpdate(query, ctx, spannerTransaction)
 }
-func (db *DB) UpdateWhere(ctx context.Context, spannerTransaction *spanner.ReadWriteTransaction, in map[string]interface{}) (int64, error) {
-	query, err := db.builder.buildUpdateWhereQuery(in)
+func (db *DB) UpdateParams(ctx context.Context, spannerTransaction *spanner.ReadWriteTransaction, in map[string]interface{}) (int64, error) {
+	query, err := db.builder.buildUpdateParamsQuery(in)
 	if err != nil {
 		return 0, err
 	}
