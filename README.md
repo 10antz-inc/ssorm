@@ -8,13 +8,13 @@ Overview
 
 * Feature
     * Insert (Model)
-    * Update (Model and Map and Where)
+    * Update (Model and Columns and Params)
     * Find (Model)
     * First (Model)
     * Count (Model)
     * Delete (Model and Where)
     * SubQuery (Model)
-    * SoftDelete
+    * SoftDelete (Insert Update Find First Count Delete SubQuery)
 
 Test
 =========
