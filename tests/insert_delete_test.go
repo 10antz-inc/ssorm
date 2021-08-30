@@ -1,12 +1,13 @@
 package tests
 
 import (
-	"cloud.google.com/go/spanner"
 	"context"
 	"fmt"
-	"github.com/10antz-inc/ssorm"
 	"testing"
 	"time"
+
+	"cloud.google.com/go/spanner"
+	"github.com/10antz-inc/ssorm"
 )
 
 func TestInsertDeleteModel(t *testing.T) {
@@ -20,7 +21,9 @@ func TestInsertDeleteModel(t *testing.T) {
 	insert.SingerId = 25
 	insert.FirstName = "first21"
 	insert.LastName = "last21"
-	
+	insert.TagIDs = []spanner.NullString{{StringVal: "a3eb54bd-0138-4c22-b858-41bbefc5c050", Valid: true}, {StringVal: "a3eb54bd-0138-4c22-b858-41bbefc5c051", Valid: true}}
+	insert.Numbers = []int64{1, 2, 3}
+
 	var singers []*Singers
 
 	db := ssorm.CreateDB()

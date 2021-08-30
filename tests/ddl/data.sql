@@ -1,3 +1,8 @@
+DROP TABLE Singers;
+DROP TABLE Albums;
+DROP TABLE Concerts;
+DROP TABLE Tags;
+
 CREATE TABLE Singers
 (
     SingerId        INT64     NOT NULL,
@@ -5,6 +10,8 @@ CREATE TABLE Singers
     LastName        STRING(1024),
     TestTime        TIMESTAMP,
     TestSpannerTime TIMESTAMP,
+    TagIds ARRAY<STRING(36)>,
+    Numbers ARRAY<INT64>,
     CreateTime      TIMESTAMP NOT NULL,
     UpdateTime      TIMESTAMP NOT NULL OPTIONS(allow_commit_timestamp= true),
     DeleteTime      TIMESTAMP
@@ -25,16 +32,23 @@ CREATE TABLE Concerts
     Price     INT64 NOT NULL,
 ) PRIMARY KEY (SingerId);
 
+CREATE TABLE Tags (
+    TagId      STRING(36) NOT NULL,
+    Name       STRING(256) NOT NULL,
+    DeleteTime TIMESTAMP,
+    CreateTime TIMESTAMP NOT NULL,
+    UpdateTime TIMESTAMP NOT NULL OPTIONS(allow_commit_timestamp=true)
+) PRIMARY KEY(TagId);
 
 
 INSERT
-Singers (SingerId, FirstName, LastName,UpdateTime,CreateTime) VALUES (12, 'Melissa', 'Garcia',CURRENT_TIMESTAMP() ,CURRENT_TIMESTAMP() );
+Singers (SingerId, FirstName, LastName, TagIds, Numbers, UpdateTime, CreateTime) VALUES (12, 'Melissa', 'Garcia', ["a3eb54bd-0138-4c22-b858-41bbefc5c050", "a3eb54bd-0138-4c22-b858-41bbefc5c051"], [1, 2], CURRENT_TIMESTAMP() ,CURRENT_TIMESTAMP());
 INSERT
-Singers (SingerId, FirstName, LastName,UpdateTime,CreateTime) VALUES (13, 'Russell', 'Morales',CURRENT_TIMESTAMP() ,CURRENT_TIMESTAMP() );
+Singers (SingerId, FirstName, LastName, TagIds, Numbers, UpdateTime, CreateTime) VALUES (13, 'Russell', 'Morales', ["a3eb54bd-0138-4c22-b858-41bbefc5c050", "a3eb54bd-0138-4c22-b858-41bbefc5c051"], [1, 2], CURRENT_TIMESTAMP() ,CURRENT_TIMESTAMP());
 INSERT
-Singers (SingerId, FirstName, LastName,UpdateTime,CreateTime) VALUES (14, 'Jacqueline', 'Long',CURRENT_TIMESTAMP() ,CURRENT_TIMESTAMP() );
+Singers (SingerId, FirstName, LastName, TagIds, Numbers, UpdateTime, CreateTime) VALUES (14, 'Jacqueline', 'Long', ["a3eb54bd-0138-4c22-b858-41bbefc5c050", "a3eb54bd-0138-4c22-b858-41bbefc5c051"], [1, 2], CURRENT_TIMESTAMP() ,CURRENT_TIMESTAMP());
 INSERT
-Singers (SingerId, FirstName, LastName,UpdateTime,CreateTime) VALUES (15, 'Dylan', 'Shaw',CURRENT_TIMESTAMP() ,CURRENT_TIMESTAMP() );
+Singers (SingerId, FirstName, LastName, TagIds, Numbers, UpdateTime, CreateTime) VALUES (15, 'Dylan', 'Shaw', ["a3eb54bd-0138-4c22-b858-41bbefc5c050", "a3eb54bd-0138-4c22-b858-41bbefc5c051"], [1, 2], CURRENT_TIMESTAMP() ,CURRENT_TIMESTAMP());
 
 
 INSERT
@@ -54,3 +68,12 @@ INSERT
 Concerts (SingerId, ConcertId, Price) VALUES (14, 3, 300);
 INSERT
 Concerts (SingerId, ConcertId, Price) VALUES (15, 4, 400);
+
+INSERT
+Tags (TagId, Name, CreateTime, UpdateTime) VALUES ("a3eb54bd-0138-4c22-b858-41bbefc5c050", "Rock", CURRENT_TIMESTAMP() ,CURRENT_TIMESTAMP());
+INSERT
+Tags (TagId, Name, CreateTime, UpdateTime) VALUES ("a3eb54bd-0138-4c22-b858-41bbefc5c051", "Pop", CURRENT_TIMESTAMP() ,CURRENT_TIMESTAMP());
+INSERT
+Tags (TagId, Name, CreateTime, UpdateTime) VALUES ("a3eb54bd-0138-4c22-b858-41bbefc5c052", "Anime", CURRENT_TIMESTAMP() ,CURRENT_TIMESTAMP());
+INSERT
+Tags (TagId, Name, CreateTime, UpdateTime) VALUES ("a3eb54bd-0138-4c22-b858-41bbefc5c053", "Dance", CURRENT_TIMESTAMP() ,CURRENT_TIMESTAMP());
