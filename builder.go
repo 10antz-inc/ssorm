@@ -4,9 +4,10 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"github.com/10antz-inc/ssorm/utils"
 	"reflect"
 	"strings"
+
+	"github.com/10antz-inc/ssorm/utils"
 )
 
 type Builder struct {
@@ -232,6 +233,10 @@ func (builder *Builder) buildInsertModelQuery() (string, error) {
 			if utils.IsTime(varValue) {
 				varValue = utils.GetTimestampStr(varValue)
 			}
+
+			if varType.Kind() == reflect.Slice || varType.Kind() == reflect.Array {
+				varValue = utils.GetArrayStr(varValue, varType)
+			}
 		}
 
 		if addColumn {
@@ -278,6 +283,10 @@ func (builder *Builder) buildUpdateModelQuery() (string, error) {
 		default:
 			if utils.IsTime(varValue) {
 				varValue = utils.GetTimestampStr(varValue)
+			}
+
+			if varType.Kind() == reflect.Slice || varType.Kind() == reflect.Array {
+				varValue = utils.GetArrayStr(varValue, varType)
 			}
 			updateData = append(updateData, fmt.Sprintf(format, varName, varValue))
 		}
@@ -332,6 +341,9 @@ func (builder *Builder) buildUpdateColumnQuery(in []string) (string, error) {
 				if utils.IsTime(varValue) {
 					varValue = utils.GetTimestampStr(varValue)
 				}
+				if varType.Kind() == reflect.Slice || varType.Kind() == reflect.Array {
+					varValue = utils.GetArrayStr(varValue, varType)
+				}
 				format := "%s=%v"
 				switch varType.Kind() {
 				case reflect.String:
@@ -367,6 +379,9 @@ func (builder *Builder) buildUpdateParamsQuery(in map[string]interface{}) (strin
 
 	for k, v := range in {
 		varType := reflect.TypeOf(v)
+		if varType.Kind() == reflect.Slice || varType.Kind() == reflect.Array {
+			v = utils.GetArrayStr(v, varType)
+		}
 		format := "%s=%v"
 		switch varType.Kind() {
 		case reflect.String:

@@ -1,10 +1,12 @@
 package utils
 
 import (
-	"cloud.google.com/go/spanner"
 	"fmt"
 	"reflect"
+	"strings"
 	"time"
+
+	"cloud.google.com/go/spanner"
 )
 
 func GetTableName(model interface{}) string {
@@ -122,4 +124,24 @@ func IsTime(value interface{}) bool {
 		return true
 	}
 	return false
+}
+
+func GetArrayStr(value interface{}, valType reflect.Type) string {
+	var res string
+	var stringVal []string
+	var valFormat string
+	fmt.Println("get array str:", value, valType)
+	if valType.String() == "[]string" || valType.String() == "[]*string" || valType.String() == "[]spanner.NullString" {
+		valFormat = `"%v"`
+	} else {
+		valFormat = "%v"
+	}
+
+	val := reflect.ValueOf(value)
+	for i := 0; i < val.Len(); i++ {
+		stringVal = append(stringVal, fmt.Sprintf(valFormat, reflect.Indirect(val.Index(i)).Interface()))
+	}
+	elms := strings.Join(stringVal, ",")
+	res = fmt.Sprintf("[%v]", elms)
+	return res
 }
