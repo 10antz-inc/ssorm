@@ -130,7 +130,7 @@ func GetArrayStr(value interface{}, valType reflect.Type) string {
 	var res string
 	var stringVal []string
 	var valFormat string
-	if valType.String() == "[]string" || valType.String() == "[]*string" || valType.String() == "[]spanner.NullString" {
+	if valType.String() == "[]string" || valType.String() == "[]*string" || valType.String() == "[]spanner.NullString" || valType.String() == "[]*spanner.NullString" {
 		valFormat = `"%v"`
 	} else {
 		valFormat = "%v"
