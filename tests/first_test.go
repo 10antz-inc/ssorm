@@ -77,7 +77,11 @@ func TestGetColumnReadOnly(t *testing.T) {
 
 	singer := Singers{}
 	db := ssorm.CreateDB()
-	err := db.Model(&singer).Select([]string{"SingerId,FirstName"}).Where("SingerId in (?)", []int{12, 13, 14}).First(ctx, rtx)
+	err := db.Model(&singer).Select([]string{"SingerId,FirstName,LastName"}).
+		Where("SingerId in (?) and LastName = ? ",
+			[]int{12, 13, 14},
+			spanner.NullString{StringVal: "Morales",Valid: true},
+			).First(ctx, rtx)
 
 	if err != nil {
 		t.Fatalf("Error happened when get singer, got %v", err)
