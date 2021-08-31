@@ -120,10 +120,8 @@ func (builder *Builder) buildWhereCondition(conditions map[string]interface{}) s
 		if reflect.ValueOf(arg).Kind() == reflect.Slice {
 			if values := reflect.ValueOf(arg); values.Len() > 0 {
 				var tempMarks []string
-				var isString bool
 				for i := 0; i < values.Len(); i++ {
-					isString = values.Index(i).Kind() == reflect.String
-					if isString {
+					if utils.IsTypeString(values.Index(i).Type()) {
 						strValue := fmt.Sprintf("\"%s\"", fmt.Sprint(values.Index(i)))
 						tempMarks = append(tempMarks, strValue)
 					} else {
@@ -134,7 +132,7 @@ func (builder *Builder) buildWhereCondition(conditions map[string]interface{}) s
 				replacements = append(replacements, strings.Join(tempMarks, ","))
 			}
 		} else {
-			if reflect.ValueOf(arg).Kind() == reflect.String {
+			if utils.IsTypeString(reflect.ValueOf(arg).Type()) {
 				format = "\"%v\""
 			}
 			replacements = append(replacements, fmt.Sprintf(format, arg))
@@ -219,6 +217,9 @@ func (builder *Builder) buildInsertModelQuery() (string, error) {
 		addColumn := true
 		tag, varName, varValue, varType := utils.ReflectValues(e, i)
 		format := "%v"
+		if utils.IsTypeString(varType) {
+			format = "\"%v\""
+		}
 		switch tag.Get(utils.SSORM_TAG_KEY) {
 		case utils.SSORM_TAG_CREATE_TIME:
 			varValue = "CURRENT_TIMESTAMP()"
@@ -241,8 +242,7 @@ func (builder *Builder) buildInsertModelQuery() (string, error) {
 
 		if addColumn {
 			cols = append(cols, fmt.Sprintf("%s", varName))
-			switch varType.Kind() {
-			case reflect.String:
+			if utils.IsTime(varType) {
 				format = "\"%v\""
 			}
 			vals = append(vals, fmt.Sprintf(format, varValue))
@@ -265,10 +265,10 @@ func (builder *Builder) buildUpdateModelQuery() (string, error) {
 	for i := 0; i < e.NumField(); i++ {
 		tag, varName, varValue, varType := utils.ReflectValues(e, i)
 		format := "%s=%v"
-		switch varType.Kind() {
-		case reflect.String:
+		if utils.IsTypeString(varType) {
 			format = "%s=\"%v\""
 		}
+		
 		switch tag.Get(utils.SSORM_TAG_KEY) {
 		case utils.SSORM_TAG_PRIMARY:
 			conditions = append(conditions, fmt.Sprintf(format, varName, varValue))
@@ -320,8 +320,7 @@ func (builder *Builder) buildUpdateColumnQuery(in []string) (string, error) {
 	for i := 0; i < e.NumField(); i++ {
 		tag, varName, varValue, varType := utils.ReflectValues(e, i)
 		format := "%s=%v"
-		switch varType.Kind() {
-		case reflect.String:
+		if utils.IsTypeString(varType) {
 			format = "%s=\"%v\""
 		}
 
@@ -345,8 +344,7 @@ func (builder *Builder) buildUpdateColumnQuery(in []string) (string, error) {
 					varValue = utils.GetArrayStr(varValue, varType)
 				}
 				format := "%s=%v"
-				switch varType.Kind() {
-				case reflect.String:
+				if utils.IsTypeString(varType) {
 					format = "%s=\"%v\""
 				}
 				updateData = append(updateData, fmt.Sprintf(format, varName, varValue))
@@ -383,8 +381,7 @@ func (builder *Builder) buildUpdateParamsQuery(in map[string]interface{}) (strin
 			v = utils.GetArrayStr(v, varType)
 		}
 		format := "%s=%v"
-		switch varType.Kind() {
-		case reflect.String:
+		if utils.IsTypeString(varType) {
 			format = "%s=\"%v\""
 		}
 		updateData = append(updateData, fmt.Sprintf(format, k, v))
@@ -394,8 +391,7 @@ func (builder *Builder) buildUpdateParamsQuery(in map[string]interface{}) (strin
 	for i := 0; i < e.NumField(); i++ {
 		tag, varName, _, varType := utils.ReflectValues(e, i)
 		format := "%s=%v"
-		switch varType.Kind() {
-		case reflect.String:
+		if utils.IsTypeString(varType) {
 			format = "%s=\"%v\""
 		}
 
@@ -423,8 +419,7 @@ func (builder *Builder) buildDeleteModelQuery() (string, error) {
 		tag, varName, varValue, varType := utils.ReflectValues(e, i)
 		format := "%s=%v"
 		if tag.Get(utils.SSORM_TAG_KEY) == utils.SSORM_TAG_PRIMARY {
-			switch varType.Kind() {
-			case reflect.String:
+			if utils.IsTypeString(varType) {
 				format = "%s=\"%v\""
 			}
 			replacement = append(replacement, fmt.Sprintf(format, varName, varValue))
@@ -462,8 +457,7 @@ func (builder *Builder) buildSoftDeleteModelQuery() (string, error) {
 	for i := 0; i < e.NumField(); i++ {
 		tag, varName, varValue, varType := utils.ReflectValues(e, i)
 		format := "%s=%v"
-		switch varType.Kind() {
-		case reflect.String:
+		if utils.IsTypeString(varType) {
 			format = "%s=\"%v\""
 		}
 		switch tag.Get(utils.SSORM_TAG_KEY) {
@@ -500,11 +494,9 @@ func (builder *Builder) buildSoftDeleteWhereQuery() (string, error) {
 	for i := 0; i < e.NumField(); i++ {
 		tag, varName, _, varType := utils.ReflectValues(e, i)
 		format := "%s=%v"
-		switch varType.Kind() {
-		case reflect.String:
+		if utils.IsTypeString(varType) {
 			format = "%s=\"%v\""
 		}
-
 		switch tag.Get(utils.SSORM_TAG_KEY) {
 		case utils.SSORM_TAG_UPDATE_TIME:
 			updateData = append(updateData, fmt.Sprintf(format, varName, "CURRENT_TIMESTAMP()"))

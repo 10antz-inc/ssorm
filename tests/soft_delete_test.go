@@ -18,7 +18,7 @@ func TestSoftDeleteModel(t *testing.T) {
 	insert := Singers{}
 	insert.SingerId = 12
 	insert.FirstName = "updateModel"
-	insert.LastName = "updateFlastNameModel"
+	insert.LastName =spanner.NullString{StringVal: "updateFlastNameModel",Valid: true}
 
 	var singers []*Singers
 	singer := Singers{}

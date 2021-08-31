@@ -144,3 +144,10 @@ func GetArrayStr(value interface{}, valType reflect.Type) string {
 	res = fmt.Sprintf("[%v]", elms)
 	return res
 }
+
+func IsTypeString(valType reflect.Type) bool {
+	if valType.Kind() == reflect.String || valType.String() == "spanner.NullString" || valType.String() == "*spanner.NullString" {
+		return true
+	}
+	return false
+}
