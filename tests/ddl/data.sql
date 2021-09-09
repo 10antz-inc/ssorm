@@ -1,8 +1,3 @@
--- DROP TABLE Singers;
--- DROP TABLE Albums;
--- DROP TABLE Concerts;
--- DROP TABLE Tags;
-
 CREATE TABLE Singers
 (
     SingerId        INT64     NOT NULL,
