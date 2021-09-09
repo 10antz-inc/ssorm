@@ -1,7 +1,7 @@
-DROP TABLE Singers;
-DROP TABLE Albums;
-DROP TABLE Concerts;
-DROP TABLE Tags;
+-- DROP TABLE Singers;
+-- DROP TABLE Albums;
+-- DROP TABLE Concerts;
+-- DROP TABLE Tags;
 
 CREATE TABLE Singers
 (

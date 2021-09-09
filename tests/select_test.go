@@ -16,9 +16,8 @@ func TestSelectColumnReadWrite(t *testing.T) {
 	defer client.Close()
 
 	var singers []*Singers
-	db := ssorm.CreateDB()
 	_, err := client.ReadWriteTransaction(ctx, func(ctx context.Context, txn *spanner.ReadWriteTransaction) error {
-		err := db.Model(&singers).Select([]string{"SingerId,FirstName"}).Where("SingerId in (?) and FirstName = ?", []int{12, 13, 14, 15}, "Dylan").Limit(1).Order("FirstName, LastName desc").Find(ctx, txn)
+		err := ssorm.Model(&singers).Select([]string{"SingerId,FirstName"}).Where("SingerId in (?) and FirstName = ?", []int{12, 13, 14, 15}, "Dylan").Limit(1).Order("FirstName, LastName desc").Find(ctx, txn)
 		return err
 	})
 
@@ -38,9 +37,9 @@ func TestSelectAllColumnReadWrite(t *testing.T) {
 	test := Singers{}
 	utils.GetDeleteColumnName(&singers)
 	utils.GetDeleteColumnName(&test)
-	db := ssorm.CreateDB()
+	
 	_, err := client.ReadWriteTransaction(ctx, func(ctx context.Context, txn *spanner.ReadWriteTransaction) error {
-		err := db.Model(&singers).Where("SingerId in (?)", []int{12, 13, 14}).Find(ctx, txn)
+		err := ssorm.Model(&singers).Where("SingerId in (?)", []int{12, 13, 14}).Find(ctx, txn)
 		return err
 	})
 
@@ -59,8 +58,8 @@ func TestSelectColumnReadOnly(t *testing.T) {
 	defer rtx.Close()
 
 	var singers []*Singers
-	db := ssorm.CreateDB()
-	err := db.Model(&singers).Select([]string{"SingerId,FirstName"}).Where("SingerId in (?) and FirstName = ?", []int{12, 13, 14, 15}, "Dylan").Limit(1).Order("FirstName, LastName desc").Find(ctx, rtx)
+	
+	err := ssorm.Model(&singers).Select([]string{"SingerId,FirstName"}).Where("SingerId in (?) and FirstName = ?", []int{12, 13, 14, 15}, "Dylan").Limit(1).Order("FirstName, LastName desc").Find(ctx, rtx)
 
 	if err != nil {
 		t.Fatalf("Error happened when search singers, got %v", err)
@@ -78,8 +77,8 @@ func TestSelectAllColumnReadOnly(t *testing.T) {
 	defer rtx.Close()
 
 	var singers []*Singers
-	db := ssorm.CreateDB()
-	err := db.Model(&singers).Where("SingerId in (?)", []int{12, 13, 14}).Find(ctx, rtx)
+	
+	err := ssorm.Model(&singers).Where("SingerId in (?)", []int{12, 13, 14}).Find(ctx, rtx)
 
 	if err != nil {
 		t.Fatalf("Error happened when search singers, got %v", err)

@@ -16,9 +16,8 @@ func TestGetAllColumnReadWrite(t *testing.T) {
 
 	singer := Singers{}
 	//singer.TestTime = time.Now()
-	db := ssorm.CreateDB()
 	_, err := client.ReadWriteTransaction(ctx, func(ctx context.Context, txn *spanner.ReadWriteTransaction) error {
-		err := db.Model(&singer).Where("SingerId in (?)", []int{12, 13, 14}).First(ctx, txn)
+		err := ssorm.Model(&singer).Where("SingerId in (?)", []int{12, 13, 14}).First(ctx, txn)
 		return err
 	})
 
@@ -35,9 +34,8 @@ func TestGetColumnReadWrite(t *testing.T) {
 	defer client.Close()
 
 	singer := Singers{}
-	db := ssorm.CreateDB()
 	_, err := client.ReadWriteTransaction(ctx, func(ctx context.Context, txn *spanner.ReadWriteTransaction) error {
-		err := db.Model(&singer).Select([]string{"SingerId,FirstName"}).Where("SingerId in (?)", []int{12, 13, 14}).First(ctx, txn)
+		err := ssorm.Model(&singer).Select([]string{"SingerId,FirstName"}).Where("SingerId in (?)", []int{12, 13, 14}).First(ctx, txn)
 		return err
 	})
 
@@ -57,8 +55,7 @@ func TestGetAllColumnReadOnly(t *testing.T) {
 	defer rtx.Close()
 
 	singer := Singers{}
-	db := ssorm.CreateDB()
-	err := db.Model(&singer).Where("SingerId in (?)", []int{12, 13, 14}).First(ctx, rtx)
+	err := ssorm.Model(&singer).Where("SingerId in (?)", []int{12, 13, 14}).First(ctx, rtx)
 
 	if err != nil {
 		t.Fatalf("Error happened when get singer, got %v", err)
@@ -76,8 +73,7 @@ func TestGetColumnReadOnly(t *testing.T) {
 	defer rtx.Close()
 
 	singer := Singers{}
-	db := ssorm.CreateDB()
-	err := db.Model(&singer).Select([]string{"SingerId,FirstName,LastName"}).
+	err := ssorm.Model(&singer).Select([]string{"SingerId,FirstName,LastName"}).
 		Where("SingerId in (?) and LastName = ? ",
 			[]int{12, 13, 14},
 			spanner.NullString{StringVal: "Morales",Valid: true},

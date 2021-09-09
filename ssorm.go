@@ -24,7 +24,7 @@ type DB struct {
 	logger  ILogger
 }
 
-func CreateDB(opts ...Option) *DB {
+func create(opts ...Option) *DB {
 	db := &DB{}
 	for _, opt := range opts {
 		opt(db)
@@ -35,7 +35,8 @@ func CreateDB(opts ...Option) *DB {
 	return db
 }
 
-func (db *DB) Model(model interface{}) *DB {
+func Model(model interface{}, opts ...Option) *DB {
+	db := create(opts...)
 	db.builder = &Builder{
 		subBuilder: &SubBuilder{},
 		model:      model,
@@ -45,7 +46,8 @@ func (db *DB) Model(model interface{}) *DB {
 	return db
 }
 
-func (db *DB) SoftDeleteModel(model interface{}) *DB {
+func SoftDeleteModel(model interface{}, opts ...Option) *DB {
+	db := create(opts...)
 	db.builder = &Builder{
 		subBuilder: &SubBuilder{},
 		model:      model,
@@ -92,8 +94,8 @@ func (db *DB) Limit(limit int64) *DB {
 
 func (db *DB) DeleteModel(ctx context.Context, spannerTransaction *spanner.ReadWriteTransaction) (int64, error) {
 	var (
-		err      error
-		query    string
+		err   error
+		query string
 	)
 
 	if db.builder.softDelete {
@@ -117,8 +119,8 @@ func (db *DB) DeleteModel(ctx context.Context, spannerTransaction *spanner.ReadW
 
 func (db *DB) DeleteWhere(ctx context.Context, spannerTransaction *spanner.ReadWriteTransaction) (int64, error) {
 	var (
-		err      error
-		query    string
+		err   error
+		query string
 	)
 	if db.builder.softDelete {
 		query, err = db.builder.buildSoftDeleteWhereQuery()
@@ -191,7 +193,7 @@ func (db *DB) Count(ctx context.Context, spannerTransaction interface{}, cnt int
 		row  *spanner.Row
 	)
 	if db.builder.tableName == "" {
-		return errors.New("Undefined table name. please set db.Model(&struct{})")
+		return errors.New("Undefined table name. please set ssorm.Model(&struct{})")
 	}
 	query, err := db.Select([]string{"COUNT(1) AS CNT"}).builder.selectQuery()
 
@@ -305,7 +307,7 @@ func (db *DB) Update(ctx context.Context, spannerTransaction *spanner.ReadWriteT
 	}
 	db.logger.Infof("Update Query: %s", db.builder.query)
 	return db.spannerUpdate(query, ctx, spannerTransaction)
-	
+
 }
 
 func (db *DB) UpdateColumns(ctx context.Context, spannerTransaction *spanner.ReadWriteTransaction, in []string) (int64, error) {

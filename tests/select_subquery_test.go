@@ -16,9 +16,8 @@ func TestSubQueryFirst(t *testing.T) {
 
 	subSingers := Singer{}
 
-	db := ssorm.CreateDB()
 	_, err := client.ReadWriteTransaction(ctx, func(ctx context.Context, txn *spanner.ReadWriteTransaction) error {
-		err := db.Model(&subSingers).TableName("Singers").AddSub(Albums{}, "SingerId = ?", 12).AddSub(Concerts{}, "SingerId = ?", 12).First(ctx, txn)
+		err := ssorm.Model(&subSingers).TableName("Singers").AddSub(Albums{}, "SingerId = ?", 12).AddSub(Concerts{}, "SingerId = ?", 12).First(ctx, txn)
 		if err != nil {
 			t.Fatalf("Error happened when delete singer, got %v", err)
 		}
@@ -41,9 +40,8 @@ func TestSubQueryFind(t *testing.T) {
 
 	var subSingers []*Singer
 
-	db := ssorm.CreateDB()
 	_, err := client.ReadWriteTransaction(ctx, func(ctx context.Context, txn *spanner.ReadWriteTransaction) error {
-		err := db.Model(&subSingers).Where("SingerId > ?", 12).TableName("Singers").AddSub(Albums{}, "").AddSub(Concerts{}, "SingerId > ?", 12).Find(ctx, txn)
+		err := ssorm.Model(&subSingers).Where("SingerId > ?", 12).TableName("Singers").AddSub(Albums{}, "").AddSub(Concerts{}, "SingerId > ?", 12).Find(ctx, txn)
 		if err != nil {
 			t.Fatalf("Error happened when delete singer, got %v", err)
 		}
