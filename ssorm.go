@@ -13,30 +13,27 @@ import (
 
 type Option func(*DB)
 
+var logger ILogger
+
+func getLogger() ILogger {
+	if logger == nil {
+		logger = NewLogger(os.Stdout)
+	}
+	return logger
+}
+
 func Logger(l ILogger) Option {
 	return func(d *DB) {
-		d.logger = l
+		logger = l
 	}
 }
 
 type DB struct {
 	builder *Builder
-	logger  ILogger
-}
-
-func create(opts ...Option) *DB {
-	db := &DB{}
-	for _, opt := range opts {
-		opt(db)
-	}
-	if db.logger == nil {
-		db.logger = NewLogger(os.Stdout)
-	}
-	return db
 }
 
 func Model(model interface{}, opts ...Option) *DB {
-	db := create(opts...)
+	db := &DB{}
 	db.builder = &Builder{
 		subBuilder: &SubBuilder{},
 		model:      model,
@@ -47,7 +44,7 @@ func Model(model interface{}, opts ...Option) *DB {
 }
 
 func SoftDeleteModel(model interface{}, opts ...Option) *DB {
-	db := create(opts...)
+	db := &DB{}
 	db.builder = &Builder{
 		subBuilder: &SubBuilder{},
 		model:      model,
@@ -105,7 +102,7 @@ func (db *DB) DeleteModel(ctx context.Context, spannerTransaction *spanner.ReadW
 		}
 		stmt := spanner.Statement{SQL: query}
 		rowCount, err := spannerTransaction.Update(ctx, stmt)
-		db.logger.Infof("Update Query: %s", db.builder.query)
+		getLogger().Infof("Update Query: %s", db.builder.query)
 		return rowCount, err
 	}
 
@@ -113,7 +110,7 @@ func (db *DB) DeleteModel(ctx context.Context, spannerTransaction *spanner.ReadW
 	if err != nil {
 		return 0, err
 	}
-	db.logger.Infof("DELETE Query: %s", db.builder.query)
+	getLogger().Infof("DELETE Query: %s", db.builder.query)
 	return db.spannerUpdate(query, ctx, spannerTransaction)
 }
 
@@ -129,7 +126,7 @@ func (db *DB) DeleteWhere(ctx context.Context, spannerTransaction *spanner.ReadW
 		}
 		stmt := spanner.Statement{SQL: query}
 		rowCount, err := spannerTransaction.Update(ctx, stmt)
-		db.logger.Infof("Update Query: %s", db.builder.query)
+		getLogger().Infof("Update Query: %s", db.builder.query)
 		return rowCount, err
 	}
 
@@ -137,7 +134,7 @@ func (db *DB) DeleteWhere(ctx context.Context, spannerTransaction *spanner.ReadW
 	if err != nil {
 		return 0, err
 	}
-	db.logger.Infof("DELETE Query: %s", db.builder.query)
+	getLogger().Infof("DELETE Query: %s", db.builder.query)
 	return db.spannerUpdate(query, ctx, spannerTransaction)
 }
 
@@ -158,7 +155,7 @@ func (db *DB) First(ctx context.Context, spannerTransaction interface{}) error {
 	)
 
 	stmt := spanner.Statement{SQL: query}
-	db.logger.Infof("Select Query: %s", stmt.SQL)
+	getLogger().Infof("Select Query: %s", stmt.SQL)
 
 	rot, readOnly := spannerTransaction.(*spanner.ReadOnlyTransaction)
 	rwt, readWrite := spannerTransaction.(*spanner.ReadWriteTransaction)
@@ -198,7 +195,7 @@ func (db *DB) Count(ctx context.Context, spannerTransaction interface{}, cnt int
 	query, err := db.Select([]string{"COUNT(1) AS CNT"}).builder.selectQuery()
 
 	stmt := spanner.Statement{SQL: query}
-	db.logger.Infof("Select Query: %s", stmt.SQL)
+	getLogger().Infof("Select Query: %s", stmt.SQL)
 
 	rot, readOnly := spannerTransaction.(*spanner.ReadOnlyTransaction)
 	rwt, readWrite := spannerTransaction.(*spanner.ReadWriteTransaction)
@@ -242,7 +239,7 @@ func (db *DB) Find(ctx context.Context, spannerTransaction interface{}) error {
 		query, _ = db.builder.selectQuery()
 	}
 	stmt := spanner.Statement{SQL: query}
-	db.logger.Infof("Select Query: %s", stmt.SQL)
+	getLogger().Infof("Select Query: %s", stmt.SQL)
 
 	rot, readOnly := spannerTransaction.(*spanner.ReadOnlyTransaction)
 	rwt, readWrite := spannerTransaction.(*spanner.ReadWriteTransaction)
@@ -295,7 +292,7 @@ func (db *DB) Insert(ctx context.Context, spannerTransaction *spanner.ReadWriteT
 	if err != nil {
 		return 0, err
 	}
-	db.logger.Infof("Insert Query: %s", db.builder.query)
+	getLogger().Infof("Insert Query: %s", db.builder.query)
 	return db.spannerUpdate(query, ctx, spannerTransaction)
 
 }
@@ -305,7 +302,7 @@ func (db *DB) Update(ctx context.Context, spannerTransaction *spanner.ReadWriteT
 	if err != nil {
 		return 0, err
 	}
-	db.logger.Infof("Update Query: %s", db.builder.query)
+	getLogger().Infof("Update Query: %s", db.builder.query)
 	return db.spannerUpdate(query, ctx, spannerTransaction)
 
 }
@@ -315,7 +312,7 @@ func (db *DB) UpdateColumns(ctx context.Context, spannerTransaction *spanner.Rea
 	if err != nil {
 		return 0, err
 	}
-	db.logger.Infof("Update Query: %s", db.builder.query)
+	getLogger().Infof("Update Query: %s", db.builder.query)
 	return db.spannerUpdate(query, ctx, spannerTransaction)
 }
 func (db *DB) UpdateParams(ctx context.Context, spannerTransaction *spanner.ReadWriteTransaction, in map[string]interface{}) (int64, error) {
@@ -323,7 +320,7 @@ func (db *DB) UpdateParams(ctx context.Context, spannerTransaction *spanner.Read
 	if err != nil {
 		return 0, err
 	}
-	db.logger.Infof("Update Query: %s", db.builder.query)
+	getLogger().Infof("Update Query: %s", db.builder.query)
 	return db.spannerUpdate(query, ctx, spannerTransaction)
 }
 
