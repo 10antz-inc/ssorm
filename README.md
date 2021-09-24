@@ -33,7 +33,7 @@ Custom Logger
 =========
 
 ```go
-ssorm.CreateDB(ssorm.Logger({custom logger}))
+ssorm.Logger({custom logger})
 ```
 
 Logger Interface
