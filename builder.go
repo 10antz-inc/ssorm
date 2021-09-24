@@ -216,6 +216,11 @@ func (builder *Builder) buildInsertModelQuery() (string, error) {
 	for i := 0; i < e.NumField(); i++ {
 		addColumn := true
 		tag, varName, varValue, varType := utils.ReflectValues(e, i)
+		
+		if utils.IsNullable(varValue) && !utils.IsValid(varValue){
+			addColumn = false
+		}
+		
 		format := "%v"
 		if utils.IsTypeString(varType) {
 			format = "\"%v\""
@@ -264,6 +269,9 @@ func (builder *Builder) buildUpdateModelQuery() (string, error) {
 
 	for i := 0; i < e.NumField(); i++ {
 		tag, varName, varValue, varType := utils.ReflectValues(e, i)
+		if utils.IsNullable(varValue) && !utils.IsValid(varValue) {
+			continue
+		}
 		format := "%s=%v"
 		if utils.IsTypeString(varType) {
 			format = "%s=\"%v\""

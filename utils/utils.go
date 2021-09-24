@@ -126,6 +126,45 @@ func IsTime(value interface{}) bool {
 	return false
 }
 
+func IsNullable(value interface{}) bool {
+	switch value.(type) {
+	case spanner.NullInt64, spanner.NullFloat64, spanner.NullString, spanner.NullDate, spanner.NullTime, spanner.NullRow,
+		*spanner.NullInt64, *spanner.NullFloat64, *spanner.NullString, *spanner.NullDate, *spanner.NullTime, *spanner.NullRow:
+		return true
+	}
+	return false
+}
+
+func IsValid(value interface{}) bool {
+	switch value.(type) {
+	case spanner.NullInt64:
+		return value.(spanner.NullInt64).Valid
+	case *spanner.NullInt64:
+		return value.(spanner.NullInt64).Valid
+	case spanner.NullFloat64:
+		return value.(spanner.NullFloat64).Valid
+	case *spanner.NullFloat64:
+		return value.(spanner.NullFloat64).Valid
+	case spanner.NullString:
+		return value.(spanner.NullString).Valid
+	case *spanner.NullString:
+		return value.(spanner.NullString).Valid
+	case spanner.NullDate:
+		return value.(spanner.NullDate).Valid
+	case *spanner.NullDate:
+		return value.(spanner.NullDate).Valid
+	case spanner.NullTime:
+		return value.(spanner.NullTime).Valid
+	case *spanner.NullTime:
+		return value.(spanner.NullTime).Valid
+	case spanner.NullRow:
+		return value.(spanner.NullRow).Valid
+	case *spanner.NullRow:
+		return value.(spanner.NullRow).Valid
+	}
+	return false
+}
+
 func GetArrayStr(value interface{}, valType reflect.Type) string {
 	var res string
 	var stringVal []string
