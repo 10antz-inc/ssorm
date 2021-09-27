@@ -16,6 +16,15 @@ Overview
     * SubQuery (Model)
     * SoftDelete (Insert Update Find First Count Delete SubQuery)
 
+* Supported data type
+    * STRING
+    * INT64
+    * FLOAT64
+    * ARRAY
+    * BOOL
+    * DATE
+    * TIMESTAMP
+
 Test
 =========
 
