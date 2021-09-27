@@ -136,31 +136,34 @@ func IsNullable(value interface{}) bool {
 }
 
 func IsValid(value interface{}) bool {
+	if value == nil {
+		return false
+	}
 	switch value.(type) {
 	case spanner.NullInt64:
 		return value.(spanner.NullInt64).Valid
 	case *spanner.NullInt64:
-		return value.(spanner.NullInt64).Valid
+		return value.(*spanner.NullInt64).Valid
 	case spanner.NullFloat64:
 		return value.(spanner.NullFloat64).Valid
 	case *spanner.NullFloat64:
-		return value.(spanner.NullFloat64).Valid
+		return value.(*spanner.NullFloat64).Valid
 	case spanner.NullString:
 		return value.(spanner.NullString).Valid
 	case *spanner.NullString:
-		return value.(spanner.NullString).Valid
+		return value.(*spanner.NullString).Valid
 	case spanner.NullDate:
 		return value.(spanner.NullDate).Valid
 	case *spanner.NullDate:
-		return value.(spanner.NullDate).Valid
+		return value.(*spanner.NullDate).Valid
 	case spanner.NullTime:
 		return value.(spanner.NullTime).Valid
 	case *spanner.NullTime:
-		return value.(spanner.NullTime).Valid
+		return value.(*spanner.NullTime).Valid
 	case spanner.NullRow:
 		return value.(spanner.NullRow).Valid
 	case *spanner.NullRow:
-		return value.(spanner.NullRow).Valid
+		return value.(*spanner.NullRow).Valid
 	}
 	return false
 }
