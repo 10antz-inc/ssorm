@@ -172,9 +172,10 @@ func GetArrayStr(value interface{}, valType reflect.Type) string {
 	var res string
 	var stringVal []string
 	var valFormat string
-	if valType.String() == "[]string" || valType.String() == "[]*string" || valType.String() == "[]spanner.NullString" || valType.String() == "[]*spanner.NullString" {
+	switch valType.String() {
+	case "[]string", "[]*string", "[]spanner.NullString", "[]*spanner.NullString", "[]civil.Date", "[]*civil.Date", "[]spanner.NullDate", "[]*spanner.NullDate":
 		valFormat = `"%v"`
-	} else {
+	default:
 		valFormat = "%v"
 	}
 
@@ -188,10 +189,11 @@ func GetArrayStr(value interface{}, valType reflect.Type) string {
 }
 
 func IsTypeString(valType reflect.Type) bool {
-	if valType.Kind() == reflect.String || valType.String() == "spanner.NullString" || valType.String() == "*spanner.NullString" {
+	if valType.Kind() == reflect.String {
 		return true
 	}
-	if valType.String() == "civil.Date" || valType.String() == "spanner.NullDate" || valType.String() == "*civil.Date" || valType.String() == "*spanner.NullDate" {
+	switch valType.String() {
+	case "spanner.NullString", "*spanner.NullString", "civil.Date", "spanner.NullDate", "*civil.Date", "*spanner.NullDate":
 		return true
 	}
 	return false
