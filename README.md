@@ -1,7 +1,7 @@
 SSORM
 =========
 
-SSORM is a simple spanner orm
+SSORM is a simple spanner orm for Golang
 
 Overview
 =========
@@ -54,4 +54,4 @@ Panicf(format string, args ...interface{})
 
 Copyright (c) 2021 10ANTZ, Inc.
 
-Released under the [MIT License](https://opensource.org/licenses/MIT)
+SSORM is released under the [MIT License](https://github.com/10antz-inc/ssorm/blob/master/LICENSE)
