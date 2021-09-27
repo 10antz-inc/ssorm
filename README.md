@@ -15,6 +15,8 @@ Overview
     * Delete (Model and Where)
     * SubQuery (Model)
     * SoftDelete (Insert Update Find First Count Delete SubQuery)
+    * SimpleQueryRead
+    * SimpleQueryWrite
 
 * Supported data type
     * STRING
