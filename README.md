@@ -1,7 +1,7 @@
 SSORM
 =========
 
-SSORM is a simple spanner orm
+SSORM is a simple spanner orm for Golang
 
 Overview
 =========
