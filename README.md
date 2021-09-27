@@ -52,6 +52,6 @@ Panicf(format string, args ...interface{})
 
 ## License
 
-Copyright 2021 10antz, Inc.
+Copyright (c) 2021 10ANTZ, Inc.
 
 Released under the [MIT License](https://opensource.org/licenses/MIT)
