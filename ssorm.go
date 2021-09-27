@@ -329,3 +329,81 @@ func (db *DB) spannerUpdate(query string, ctx context.Context, spannerTransactio
 	rowCount, err := spannerTransaction.Update(ctx, stmt)
 	return rowCount, err
 }
+func SimpleQueryRead(ctx context.Context, spannerTransaction interface{}, query string, result interface{}) error {
+	var (
+		err  error
+		iter *spanner.RowIterator
+		row  *spanner.Row
+	)
+
+	var (
+		isSlice, isPtr bool
+	)
+	stmt := spanner.Statement{SQL: query}
+	getLogger().Infof("Select Query: %s", stmt.SQL)
+
+	rot, readOnly := spannerTransaction.(*spanner.ReadOnlyTransaction)
+	rwt, readWrite := spannerTransaction.(*spanner.ReadWriteTransaction)
+	if readOnly {
+		iter = rot.Query(ctx, stmt)
+	}
+	if readWrite {
+		iter = rwt.Query(ctx, stmt)
+	}
+
+	defer iter.Stop()
+
+	results := reflect.Indirect(reflect.ValueOf(result))
+	var resultType reflect.Type
+	if kind := results.Kind(); kind == reflect.Slice {
+		isSlice = true
+		resultType = results.Type().Elem()
+
+		results.Set(reflect.MakeSlice(results.Type(), 0, 0))
+
+		if resultType.Kind() == reflect.Ptr {
+			isPtr = true
+			resultType = resultType.Elem()
+		}
+		for {
+			if row, err = iter.Next(); err != nil {
+				if err == iterator.Done {
+					return nil
+				}
+				return err
+			}
+			results := reflect.Indirect(reflect.ValueOf(result))
+			elem := reflect.New(resultType).Interface()
+			row.ToStruct(elem)
+
+			if isSlice {
+				if isPtr {
+					results.Set(reflect.Append(results, reflect.ValueOf(elem).Elem().Addr()))
+				} else {
+					results.Set(reflect.Append(results, reflect.ValueOf(elem).Elem()))
+				}
+			}
+		}
+	} else {
+		for {
+			if row, err = iter.Next(); err != nil {
+				if err == iterator.Done {
+					fmt.Printf("Result: %+v", result)
+					return nil
+				}
+				return err
+			}
+
+			row.ToStruct(result)
+			break
+		}
+	}
+
+	return err
+}
+
+func SimpleQueryWrite(ctx context.Context, spannerTransaction *spanner.ReadWriteTransaction, query string) (int64, error) {
+	stmt := spanner.Statement{SQL: query}
+	rowCount, err := spannerTransaction.Update(ctx, stmt)
+	return rowCount, err
+}
