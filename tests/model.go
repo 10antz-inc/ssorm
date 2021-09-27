@@ -1,6 +1,7 @@
 package tests
 
 import (
+	"cloud.google.com/go/civil"
 	"time"
 
 	"cloud.google.com/go/spanner"
@@ -39,4 +40,19 @@ type Concerts struct {
 	ConcertId  int64
 	Price      int64
 	DeleteTime spanner.NullTime `spanner:"DeleteTime" ssorm_key:"delete_time"`
+}
+
+type DataTypes struct {
+	DataTypesId  int64 `ssorm_key:"primary"`
+	FirstName    string
+	TestTime     spanner.NullTime
+	ArrayString  []spanner.NullString
+	ArrayInt64   []int64
+	ArrayFloat64 []float64
+	BoolValue    bool
+	FloatValue   float64
+	DateValue    civil.Date
+	CreateTime   time.Time        `spanner:"CreateTime" ssorm_key:"create_time"`
+	UpdateTime   time.Time        `spanner:"UpdateTime" ssorm_key:"update_time"`
+	DeleteTime   spanner.NullTime `spanner:"DeleteTime" ssorm_key:"delete_time"`
 }

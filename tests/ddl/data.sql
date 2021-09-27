@@ -5,8 +5,8 @@ CREATE TABLE Singers
     LastName        STRING(1024),
     TestTime        TIMESTAMP,
     TestSpannerTime TIMESTAMP,
-    TagIds ARRAY<STRING(36)>,
-    Numbers ARRAY<INT64>,
+    TagIds          ARRAY<STRING(36)>,
+    Numbers         ARRAY<INT64>,
     CreateTime      TIMESTAMP NOT NULL,
     UpdateTime      TIMESTAMP NOT NULL OPTIONS(allow_commit_timestamp= true),
     DeleteTime      TIMESTAMP
@@ -27,12 +27,13 @@ CREATE TABLE Concerts
     Price     INT64 NOT NULL,
 ) PRIMARY KEY (SingerId);
 
-CREATE TABLE Tags (
+CREATE TABLE Tags
+(
     TagId      STRING(36) NOT NULL,
     Name       STRING(256) NOT NULL,
     DeleteTime TIMESTAMP,
     CreateTime TIMESTAMP NOT NULL,
-    UpdateTime TIMESTAMP NOT NULL OPTIONS(allow_commit_timestamp=true)
+    UpdateTime TIMESTAMP NOT NULL OPTIONS(allow_commit_timestamp= true)
 ) PRIMARY KEY(TagId);
 
 
@@ -72,3 +73,23 @@ INSERT
 Tags (TagId, Name, CreateTime, UpdateTime) VALUES ("a3eb54bd-0138-4c22-b858-41bbefc5c052", "Anime", CURRENT_TIMESTAMP() ,CURRENT_TIMESTAMP());
 INSERT
 Tags (TagId, Name, CreateTime, UpdateTime) VALUES ("a3eb54bd-0138-4c22-b858-41bbefc5c053", "Dance", CURRENT_TIMESTAMP() ,CURRENT_TIMESTAMP());
+
+CREATE TABLE DataTypes
+(
+    DataTypesId  INT64     NOT NULL,
+    FirstName    STRING(1024),
+    TestTime     TIMESTAMP,
+    ArrayString  ARRAY<STRING(36)>,
+    ArrayInt64   ARRAY<INT64>,
+    ArrayFloat64 ARRAY<FLOAT64>,
+    BoolValue    BOOL,
+    FloatValue   FLOAT64,
+    DateValue    Date,
+    CreateTime   TIMESTAMP NOT NULL,
+    UpdateTime   TIMESTAMP NOT NULL,
+    DeleteTime   TIMESTAMP
+) PRIMARY KEY (DataTypesId);
+
+INSERT
+DataTypes (DataTypesId, FirstName, TestTime, ArrayString,ArrayInt64, ArrayFloat64,BoolValue,FloatValue,DateValue, UpdateTime, CreateTime) VALUES (26, 'Melissa', CURRENT_TIMESTAMP() , ["array_str_1", "array_str_2"], [11, 12],[1.001, 2.003], TRUE,3.003,DATE(TIMESTAMP_MILLIS(1632611100000)),CURRENT_TIMESTAMP() ,CURRENT_TIMESTAMP());
+

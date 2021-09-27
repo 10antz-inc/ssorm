@@ -188,5 +188,8 @@ func IsTypeString(valType reflect.Type) bool {
 	if valType.Kind() == reflect.String || valType.String() == "spanner.NullString" || valType.String() == "*spanner.NullString" {
 		return true
 	}
+	if valType.String() == "civil.Date" || valType.String() == "spanner.NullDate" || valType.String() == "*civil.Date" || valType.String() == "*spanner.NullDate" {
+		return true
+	}
 	return false
 }
