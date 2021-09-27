@@ -91,5 +91,5 @@ CREATE TABLE DataTypes
 ) PRIMARY KEY (DataTypesId);
 
 INSERT
-DataTypes (DataTypesId, FirstName, TestTime, ArrayString,ArrayInt64, ArrayFloat64,BoolValue,FloatValue,DateValue, UpdateTime, CreateTime) VALUES (26, 'Melissa', CURRENT_TIMESTAMP() , ["array_str_1", "array_str_2"], [11, 12],[1.001, 2.003], TRUE,3.003,DATE(TIMESTAMP_MILLIS(1632611100000)),CURRENT_TIMESTAMP() ,CURRENT_TIMESTAMP());
+DataTypes (DataTypesId, FirstName, TestTime, ArrayString,ArrayInt64, ArrayFloat64,BoolValue,FloatValue,DateValue, UpdateTime, CreateTime) VALUES (26, 'Melissa', CURRENT_TIMESTAMP() , ["array_str_1", "array_str_2"], [11, 12],[1.001, 2.003], TRUE,3.003,"2021-09-28",CURRENT_TIMESTAMP() ,CURRENT_TIMESTAMP());
 
