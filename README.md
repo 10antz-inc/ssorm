@@ -30,7 +30,7 @@ Overview
 Test
 =========
 
-* Config spanner-emulator && create instance && create database && insert record
+* Configure spanner-emulator && create instance && create database && insert record
     ```
     . ./tests/ddl/create_datbase.sh
     ```
