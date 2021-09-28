@@ -139,7 +139,9 @@ func (db *DB) DeleteWhere(ctx context.Context, spannerTransaction *spanner.ReadW
 }
 
 func (db *DB) First(ctx context.Context, spannerTransaction interface{}) error {
-
+	var (
+		err error
+	)
 	db.builder.limit = 1
 	var query string
 	if db.builder.subBuilder.subModels != nil {
@@ -148,38 +150,7 @@ func (db *DB) First(ctx context.Context, spannerTransaction interface{}) error {
 		query, _ = db.builder.selectQuery()
 	}
 
-	var (
-		err  error
-		iter *spanner.RowIterator
-		row  *spanner.Row
-	)
-
-	stmt := spanner.Statement{SQL: query}
-	getLogger().Infof("Select Query: %s", stmt.SQL)
-
-	rot, readOnly := spannerTransaction.(*spanner.ReadOnlyTransaction)
-	rwt, readWrite := spannerTransaction.(*spanner.ReadWriteTransaction)
-	if readOnly {
-		iter = rot.Query(ctx, stmt)
-	}
-	if readWrite {
-		iter = rwt.Query(ctx, stmt)
-	}
-
-	defer iter.Stop()
-	for {
-		if row, err = iter.Next(); err != nil {
-			if err == iterator.Done {
-				fmt.Printf("Result: %+v", db.builder.model)
-				return nil
-			}
-			return err
-		}
-
-		row.ToStruct(db.builder.model)
-		break
-	}
-
+	err = SimpleQueryRead(ctx, spannerTransaction, query, db.builder.model)
 	return err
 }
 
@@ -224,67 +195,17 @@ func (db *DB) Count(ctx context.Context, spannerTransaction interface{}, cnt int
 func (db *DB) Find(ctx context.Context, spannerTransaction interface{}) error {
 
 	var (
-		err  error
-		iter *spanner.RowIterator
-		row  *spanner.Row
+		err error
 	)
 
-	var (
-		isSlice, isPtr bool
-	)
 	var query string
 	if db.builder.subBuilder.subModels != nil {
 		query, _ = db.builder.buildSubQuery()
 	} else {
 		query, _ = db.builder.selectQuery()
 	}
-	stmt := spanner.Statement{SQL: query}
-	getLogger().Infof("Select Query: %s", stmt.SQL)
-
-	rot, readOnly := spannerTransaction.(*spanner.ReadOnlyTransaction)
-	rwt, readWrite := spannerTransaction.(*spanner.ReadWriteTransaction)
-	if readOnly {
-		iter = rot.Query(ctx, stmt)
-	}
-	if readWrite {
-		iter = rwt.Query(ctx, stmt)
-	}
-
-	defer iter.Stop()
-
-	results := reflect.Indirect(reflect.ValueOf(db.builder.model))
-	var resultType reflect.Type
-	if kind := results.Kind(); kind == reflect.Slice {
-		isSlice = true
-		resultType = results.Type().Elem()
-
-		results.Set(reflect.MakeSlice(results.Type(), 0, 0))
-
-		if resultType.Kind() == reflect.Ptr {
-			isPtr = true
-			resultType = resultType.Elem()
-		}
-	}
-
-	for {
-		if row, err = iter.Next(); err != nil {
-			if err == iterator.Done {
-				return nil
-			}
-			return err
-		}
-		results := reflect.Indirect(reflect.ValueOf(db.builder.model))
-		elem := reflect.New(resultType).Interface()
-		row.ToStruct(elem)
-
-		if isSlice {
-			if isPtr {
-				results.Set(reflect.Append(results, reflect.ValueOf(elem).Elem().Addr()))
-			} else {
-				results.Set(reflect.Append(results, reflect.ValueOf(elem).Elem()))
-			}
-		}
-	}
+	err = SimpleQueryRead(ctx, spannerTransaction, query, db.builder.model)
+	return err
 }
 
 func (db *DB) Insert(ctx context.Context, spannerTransaction *spanner.ReadWriteTransaction) (int64, error) {
