@@ -29,16 +29,9 @@ type SubBuilder struct {
 	conditions []map[string]interface{}
 }
 
-func (builder *Builder) addSub(model interface{}, query interface{}, values ...interface{}) {
+func (builder *Builder) addSub(model interface{}, query interface{}, values interface{}) {
 	builder.subBuilder.subModels = append(builder.subBuilder.subModels, model)
-	if !builder.softDelete {
-		deleteColumn := utils.GetDeleteColumnName(model)
-		if deleteColumn != "" {
-			query = fmt.Sprintf("%s IS NULL", deleteColumn)
-		}
-	}
 	condition := map[string]interface{}{"query": query, "args": values}
-
 	builder.subBuilder.conditions = append(builder.subBuilder.conditions, condition)
 }
 
@@ -216,11 +209,11 @@ func (builder *Builder) buildInsertModelQuery() (string, error) {
 	for i := 0; i < e.NumField(); i++ {
 		addColumn := true
 		tag, varName, varValue, varType := utils.ReflectValues(e, i)
-		
-		if utils.IsNullable(varValue) && !utils.IsValid(varValue){
+
+		if utils.IsNullable(varValue) && !utils.IsValid(varValue) {
 			addColumn = false
 		}
-		
+
 		format := "%v"
 		if utils.IsTypeString(varType) {
 			format = "\"%v\""
@@ -276,7 +269,7 @@ func (builder *Builder) buildUpdateModelQuery() (string, error) {
 		if utils.IsTypeString(varType) {
 			format = "%s=\"%v\""
 		}
-		
+
 		switch tag.Get(utils.SSORM_TAG_KEY) {
 		case utils.SSORM_TAG_PRIMARY:
 			conditions = append(conditions, fmt.Sprintf(format, varName, varValue))
