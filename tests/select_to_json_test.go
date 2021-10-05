@@ -6,13 +6,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/10antz-inc/ssorm"
-	"github.com/10antz-inc/ssorm/utils"
 	"google.golang.org/api/iterator"
 	"strings"
 	"testing"
 )
 
-type CloumnTable struct {
+type ColumnTable struct {
 	ColumnName  string
 	SpannerType string
 }
@@ -25,12 +24,7 @@ func TestSelectToJson(t *testing.T) {
 	client, _ := spanner.NewClient(ctx, url)
 	defer client.Close()
 
-	var singers []*Singers
-	test := Singers{}
-	utils.GetDeleteColumnName(&singers)
-	utils.GetDeleteColumnName(&test)
-
-	var columnTable []*CloumnTable
+	var columnTable []*ColumnTable
 
 	rtx := client.ReadOnlyTransaction()
 	defer rtx.Close()
@@ -100,12 +94,44 @@ func extractDataByType(types map[string]string, rows []spanner.Row) []*map[strin
 				if strings.Index(types[columnNames[i]], "STRING") > 0 {
 					var value []spanner.NullString
 					decodeValueByType(i, row, &value)
-					valueMap[columnNames[i]] = fmt.Sprintf("%v", value)
+					if value != nil {
+						var strValue []string
+						for _, v := range value {
+							strValue = append(strValue, fmt.Sprintf(`"%v"`, v.StringVal))
+						}
+						valueMap[columnNames[i]] = "[" + strings.Join(strValue, ",") + "]"
+					} else {
+						valueMap[columnNames[i]] = fmt.Sprintf("%v", value)
+					}
+					continue
+
 				}
 				if strings.Index(types[columnNames[i]], "INT") > 0 {
 					var value []spanner.NullInt64
 					decodeValueByType(i, row, &value)
-					valueMap[columnNames[i]] = fmt.Sprintf("%v", value)
+					if value != nil {
+						var strValue []string
+						for _, v := range value {
+							strValue = append(strValue, fmt.Sprintf("%v", v.Int64))
+						}
+
+						valueMap[columnNames[i]] = "[" + strings.Join(strValue, ",") + "]"
+					} else {
+						valueMap[columnNames[i]] = fmt.Sprintf("%v", value)
+					}
+				}
+				if strings.Index(types[columnNames[i]], "FLOAT") > 0 {
+					var value []spanner.NullFloat64
+					decodeValueByType(i, row, &value)
+					if value != nil {
+						var strValue []string
+						for _, v := range value {
+							strValue = append(strValue, fmt.Sprintf("%v", v.Float64))
+						}
+						valueMap[columnNames[i]] = "[" + strings.Join(strValue, ",") + "]"
+					} else {
+						valueMap[columnNames[i]] = fmt.Sprintf("%v", value)
+					}
 				}
 
 				continue
