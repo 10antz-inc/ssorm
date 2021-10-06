@@ -27,6 +27,13 @@ Overview
     * DATE
     * TIMESTAMP
 
+* SSORM Tag
+    * primary
+    * create_time
+    * update_time
+    * delete_time
+    * ignore_write
+
 Test
 =========
 
