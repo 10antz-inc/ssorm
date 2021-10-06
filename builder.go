@@ -210,6 +210,10 @@ func (builder *Builder) buildInsertModelQuery() (string, error) {
 		addColumn := true
 		tag, varName, varValue, varType := utils.ReflectValues(e, i)
 
+		if tag.Get(utils.SSORM_TAG_KEY) == utils.SSORM_TAG_IGNORE_WRITE {
+			continue
+		}
+
 		if utils.IsNullable(varValue) && !utils.IsValid(varValue) {
 			addColumn = false
 		}
@@ -262,6 +266,11 @@ func (builder *Builder) buildUpdateModelQuery() (string, error) {
 
 	for i := 0; i < e.NumField(); i++ {
 		tag, varName, varValue, varType := utils.ReflectValues(e, i)
+
+		if tag.Get(utils.SSORM_TAG_KEY) == utils.SSORM_TAG_IGNORE_WRITE {
+			continue
+		}
+
 		if utils.IsNullable(varValue) && !utils.IsValid(varValue) {
 			continue
 		}
@@ -320,6 +329,9 @@ func (builder *Builder) buildUpdateColumnQuery(in []string) (string, error) {
 
 	for i := 0; i < e.NumField(); i++ {
 		tag, varName, varValue, varType := utils.ReflectValues(e, i)
+		if tag.Get(utils.SSORM_TAG_KEY) == utils.SSORM_TAG_IGNORE_WRITE {
+			continue
+		}
 		format := "%s=%v"
 		if utils.IsTypeString(varType) {
 			format = "%s=\"%v\""
