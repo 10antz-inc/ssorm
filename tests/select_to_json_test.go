@@ -89,23 +89,6 @@ func TestAutoGenerateOrm(t *testing.T) {
 	}
 	generate += "}"
 	fmt.Println(generate)
-
-	//type Singer struct {
-	//	SingerId        int64  `ssorm_key:"primary"`
-	//	FirstName       string `spanner:"Name"`
-	//	LastName        spanner.NullString
-	//	LastName2       spanner.NullString
-	//	TestTime        spanner.NullTime     `spanner:"TestTime"` //NULL を許容する場合必ず、spanner.NullTimeを指定すること
-	//	TestSpannerTime spanner.NullTime     `spanner:"TestSpannerTime"`
-	//	TagIDs          []spanner.NullString `spanner:"TagIds"`
-	//	Numbers         []int64              `spanner:"Numbers"`
-	//	Albums          []*Albums            `spanner:"Albums"`
-	//	Concerts        []*Concerts          `spanner:"Concerts"`
-	//	DeleteTime      spanner.NullTime     `spanner:"DeleteTime" ssorm_key:"delete_time"`
-	//	CreateTime      time.Time            `spanner:"CreateTime" ssorm_key:"create_time"`
-	//	UpdateTime      time.Time            `spanner:"UpdateTime" ssorm_key:"update_time"`
-	//}
-
 	if err != nil {
 		t.Fatalf("Error happened when search singers, got %v", err)
 	}
