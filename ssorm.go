@@ -258,7 +258,7 @@ func SimpleQueryRead(ctx context.Context, spannerTransaction interface{}, query 
 	)
 
 	var (
-		isSlice, isPtr bool
+		isPtr bool
 	)
 	stmt := spanner.Statement{SQL: query}
 	getLogger().Infof("Select Query: %s", stmt.SQL)
@@ -277,7 +277,6 @@ func SimpleQueryRead(ctx context.Context, spannerTransaction interface{}, query 
 	results := reflect.Indirect(reflect.ValueOf(result))
 	var resultType reflect.Type
 	if kind := results.Kind(); kind == reflect.Slice {
-		isSlice = true
 		resultType = results.Type().Elem()
 
 		results.Set(reflect.MakeSlice(results.Type(), 0, 0))
@@ -297,12 +296,10 @@ func SimpleQueryRead(ctx context.Context, spannerTransaction interface{}, query 
 			elem := reflect.New(resultType).Interface()
 			row.ToStruct(elem)
 
-			if isSlice {
-				if isPtr {
-					results.Set(reflect.Append(results, reflect.ValueOf(elem).Elem().Addr()))
-				} else {
-					results.Set(reflect.Append(results, reflect.ValueOf(elem).Elem()))
-				}
+			if isPtr {
+				results.Set(reflect.Append(results, reflect.ValueOf(elem).Elem().Addr()))
+			} else {
+				results.Set(reflect.Append(results, reflect.ValueOf(elem).Elem()))
 			}
 		}
 	} else {
