@@ -222,7 +222,6 @@ func (builder *Builder) buildInsertModelQuery() (string, error) {
 		}
 
 		if addColumn {
-			fmt.Println(builder.params)
 			if !isSpannerValue {
 				vals = append(vals, fmt.Sprintf("@%s", varName))
 				builder.params[varName] = varValue

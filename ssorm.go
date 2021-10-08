@@ -51,7 +51,7 @@ func SoftDeleteModel(model interface{}, opts ...Option) *DB {
 		model:      model,
 		tableName:  utils.GetTableName(model),
 		softDelete: true,
-		params:     make(map[string]interface{}), 
+		params:     make(map[string]interface{}),
 	}
 	return db
 }
@@ -126,17 +126,15 @@ func (db *DB) DeleteWhere(ctx context.Context, spannerTransaction *spanner.ReadW
 		if err != nil {
 			return 0, err
 		}
-		stmt := spanner.Statement{SQL: query}
-		rowCount, err := spannerTransaction.Update(ctx, stmt)
 		getLogger().Infof("Update Query: %s", db.builder.query)
-		return rowCount, err
+		return SimpleQueryWrite(ctx, spannerTransaction, query, db.builder.params)
 	}
 
 	query, err = db.builder.buildDeleteWhereQuery()
 	if err != nil {
 		return 0, err
 	}
-	getLogger().Infof("DELETE Query: %s", db.builder.query)
+	getLogger().Infof("DELETE Query: %s Param: %v", db.builder.query, db.builder.params)
 	return SimpleQueryWrite(ctx, spannerTransaction, query, db.builder.params)
 }
 
@@ -169,7 +167,7 @@ func (db *DB) Count(ctx context.Context, spannerTransaction interface{}, cnt int
 
 	stmt := spanner.Statement{SQL: query, Params: db.builder.params}
 
-	getLogger().Infof("Select Query: %s", stmt.SQL)
+	getLogger().Infof("Select Query: %s Param: %v", stmt.SQL, db.builder.params)
 
 	rot, readOnly := spannerTransaction.(*spanner.ReadOnlyTransaction)
 	rwt, readWrite := spannerTransaction.(*spanner.ReadWriteTransaction)
@@ -217,7 +215,7 @@ func (db *DB) Insert(ctx context.Context, spannerTransaction *spanner.ReadWriteT
 	if err != nil {
 		return 0, err
 	}
-	getLogger().Infof("Insert Query: %s", db.builder.query)
+	getLogger().Infof("Insert Query: %s Param: %v", db.builder.query, db.builder.params)
 	return SimpleQueryWrite(ctx, spannerTransaction, query, db.builder.params)
 
 }
@@ -227,7 +225,7 @@ func (db *DB) Update(ctx context.Context, spannerTransaction *spanner.ReadWriteT
 	if err != nil {
 		return 0, err
 	}
-	getLogger().Infof("Update Query: %s", db.builder.query)
+	getLogger().Infof("Update Query: %s Param: %v", db.builder.query, db.builder.params)
 	return SimpleQueryWrite(ctx, spannerTransaction, query, db.builder.params)
 
 }
@@ -237,7 +235,7 @@ func (db *DB) UpdateColumns(ctx context.Context, spannerTransaction *spanner.Rea
 	if err != nil {
 		return 0, err
 	}
-	getLogger().Infof("Update Query: %s", db.builder.query)
+	getLogger().Infof("Update Query: %s Param: %v", db.builder.query, db.builder.params)
 	return SimpleQueryWrite(ctx, spannerTransaction, query, db.builder.params)
 }
 func (db *DB) UpdateParams(ctx context.Context, spannerTransaction *spanner.ReadWriteTransaction, in map[string]interface{}) (int64, error) {
@@ -245,7 +243,7 @@ func (db *DB) UpdateParams(ctx context.Context, spannerTransaction *spanner.Read
 	if err != nil {
 		return 0, err
 	}
-	getLogger().Infof("Update Query: %s", db.builder.query)
+	getLogger().Infof("Update Query: %s Param: %v", db.builder.query, db.builder.params)
 	return SimpleQueryWrite(ctx, spannerTransaction, query, db.builder.params)
 }
 
