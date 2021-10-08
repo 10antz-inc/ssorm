@@ -104,7 +104,7 @@ func (db *DB) DeleteModel(ctx context.Context, spannerTransaction *spanner.ReadW
 		}
 		rowCount, err := SimpleQueryWrite(ctx, spannerTransaction, query, db.builder.params)
 
-		getLogger().Infof("Update Query: %s", db.builder.query)
+		getLogger().Infof("Update Query: %s Param: %v", db.builder.query, db.builder.params)
 		return rowCount, err
 	}
 
@@ -112,7 +112,7 @@ func (db *DB) DeleteModel(ctx context.Context, spannerTransaction *spanner.ReadW
 	if err != nil {
 		return 0, err
 	}
-	getLogger().Infof("DELETE Query: %s", db.builder.query)
+	getLogger().Infof("DELETE Query: %s Param: %v", db.builder.query, db.builder.params)
 	return SimpleQueryWrite(ctx, spannerTransaction, query, db.builder.params)
 }
 
@@ -126,7 +126,7 @@ func (db *DB) DeleteWhere(ctx context.Context, spannerTransaction *spanner.ReadW
 		if err != nil {
 			return 0, err
 		}
-		getLogger().Infof("Update Query: %s", db.builder.query)
+		getLogger().Infof("Update Query: %s Param: %v", db.builder.query, db.builder.params)
 		return SimpleQueryWrite(ctx, spannerTransaction, query, db.builder.params)
 	}
 
@@ -258,7 +258,7 @@ func SimpleQueryRead(ctx context.Context, spannerTransaction interface{}, query 
 		isPtr bool
 	)
 	stmt := spanner.Statement{SQL: query, Params: params}
-	getLogger().Infof("Select Query: %s %v", stmt.SQL, params)
+	getLogger().Infof("Select Query: %s Param: %v", stmt.SQL, params)
 
 	rot, readOnly := spannerTransaction.(*spanner.ReadOnlyTransaction)
 	rwt, readWrite := spannerTransaction.(*spanner.ReadWriteTransaction)
