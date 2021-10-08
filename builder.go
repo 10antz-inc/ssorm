@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"strconv"
 	"strings"
 
 	"github.com/10antz-inc/ssorm/utils"
@@ -78,7 +79,7 @@ func (builder *Builder) buildOffset() {
 	}
 }
 
-func (builder *Builder) buildWhereCondition(conditions map[string]interface{}) string {
+func (builder *Builder) buildWhereCondition(conditions map[string]interface{}, prefix string) string {
 
 	var deleteColumn string
 	if conditions == nil || len(conditions) == 0 {
@@ -107,36 +108,15 @@ func (builder *Builder) buildWhereCondition(conditions map[string]interface{}) s
 	query := clause["query"].(string)
 	args := clause["args"].([]interface{})
 
-	var replacements []string
-	for _, arg := range args {
-		format := "%v"
-		if reflect.ValueOf(arg).Kind() == reflect.Slice {
-			if values := reflect.ValueOf(arg); values.Len() > 0 {
-				var tempMarks []string
-				for i := 0; i < values.Len(); i++ {
-					if utils.IsTypeString(values.Index(i).Type()) {
-						strValue := fmt.Sprintf("\"%s\"", fmt.Sprint(values.Index(i)))
-						tempMarks = append(tempMarks, strValue)
-					} else {
-						tempMarks = append(tempMarks, fmt.Sprint(values.Index(i)))
-					}
-				}
-
-				replacements = append(replacements, strings.Join(tempMarks, ","))
-			}
-		} else {
-			if utils.IsTypeString(reflect.ValueOf(arg).Type()) {
-				format = "\"%v\""
-			}
-			replacements = append(replacements, fmt.Sprintf(format, arg))
-		}
-	}
-
 	buff := bytes.NewBuffer([]byte{})
 	i := 0
 	for _, s := range query {
-		if s == '?' && len(replacements) > i {
-			buff.WriteString(replacements[i])
+		if s == '?' {
+			if reflect.ValueOf(args[i]).Kind() == reflect.Slice {
+				buff.WriteString(fmt.Sprintf("UNNEST(@where_%s%d)", prefix, i))
+			} else {
+				buff.WriteString(fmt.Sprintf("@where_%s%d", prefix, i))
+			}
 			i++
 		} else {
 			buff.WriteRune(s)
@@ -146,7 +126,7 @@ func (builder *Builder) buildWhereCondition(conditions map[string]interface{}) s
 }
 
 func (builder *Builder) buildCondition() error {
-	condition := builder.buildWhereCondition(builder.whereConditions)
+	condition := builder.buildWhereCondition(builder.whereConditions, "")
 	if condition != "" {
 		builder.query = fmt.Sprintf("%s WHERE %s", builder.query, condition)
 	}
@@ -180,17 +160,20 @@ func (builder *Builder) buildSubQuery() (string, error) {
 	builder.query = "SELECT *"
 
 	var subQueries []string
+	index := 0
 	for i, v := range builder.subBuilder.subModels {
 		tableName := utils.GetTableName(v)
 		query := fmt.Sprintf("SELECT AS STRUCT * FROM %s", tableName)
 		if builder.subBuilder.conditions[i] != nil {
-			condition := builder.buildWhereCondition(builder.subBuilder.conditions[i])
+			condition := builder.buildWhereCondition(builder.subBuilder.conditions[i], fmt.Sprintf("sub_%d_", index))
 			if condition != "" {
 				query = fmt.Sprintf("%s WHERE %s", query, condition)
 			}
+			index++
 		}
 		query = fmt.Sprintf("ARRAY ( %s ) as %s", query, tableName)
 		subQueries = append(subQueries, query)
+
 	}
 	builder.query = fmt.Sprintf("%s, %s, FROM %s", builder.query, strings.Join(subQueries, ","), builder.tableName)
 
@@ -200,6 +183,7 @@ func (builder *Builder) buildSubQuery() (string, error) {
 }
 
 func (builder *Builder) buildInsertModelQuery() (string, error) {
+	params := make(map[string]interface{})
 	builder.query = fmt.Sprintf("INSERT INTO  %s", builder.tableName)
 	e := reflect.Indirect(reflect.ValueOf(builder.model))
 	var (
@@ -417,7 +401,7 @@ func (builder *Builder) buildUpdateParamsQuery(in map[string]interface{}) (strin
 		}
 	}
 	builder.query = fmt.Sprintf("%s %s", builder.query, strings.Join(updateData, ","))
-	condition := builder.buildWhereCondition(builder.whereConditions)
+	condition := builder.buildWhereCondition(builder.whereConditions, "")
 	if condition != "" {
 		builder.query = fmt.Sprintf("%s WHERE %s", builder.query, condition)
 	}
@@ -451,7 +435,7 @@ func (builder *Builder) buildDeleteWhereQuery() (string, error) {
 	}
 	builder.query = fmt.Sprintf("DELETE FROM %s", builder.tableName)
 
-	condition := builder.buildWhereCondition(builder.whereConditions)
+	condition := builder.buildWhereCondition(builder.whereConditions, "")
 	if condition != "" {
 		builder.query = fmt.Sprintf("%s WHERE %s", builder.query, condition)
 	}
@@ -520,9 +504,32 @@ func (builder *Builder) buildSoftDeleteWhereQuery() (string, error) {
 		}
 	}
 	builder.query = fmt.Sprintf("%s %s", builder.query, strings.Join(updateData, ","))
-	condition := builder.buildWhereCondition(builder.whereConditions)
+	condition := builder.buildWhereCondition(builder.whereConditions, "")
 	if condition != "" {
 		builder.query = fmt.Sprintf("%s WHERE %s", builder.query, condition)
 	}
 	return builder.query, nil
+}
+
+func (builder *Builder) BuildWhereParam() map[string]interface{} {
+	result := make(map[string]interface{})
+	clause := builder.whereConditions
+	if clause != nil {
+		args := clause["args"].([]interface{})
+		for i := 0; i < len(args); i++ {
+			result["where_"+strconv.Itoa(i)] = args[i]
+		}
+	}
+
+	for i, _ := range builder.subBuilder.subModels {
+		clause = builder.subBuilder.conditions[i]
+		if clause != nil {
+			args := clause["args"].([]interface{})
+			for j := 0; j < len(args); j++ {
+				result["where_"+fmt.Sprintf("sub_%d_%d", i, j)] = args[j]
+			}
+		}
+	}
+
+	return result
 }

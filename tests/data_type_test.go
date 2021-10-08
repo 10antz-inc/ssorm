@@ -10,7 +10,7 @@ import (
 )
 
 func TestDataTypeBool(t *testing.T) {
-	url := "projects/spanner-emulator/instances/test/databases/test"
+	url := "projects/spanner-emulator/instances/dev/databases/kagura"
 	ctx := context.Background()
 	client, _ := spanner.NewClient(ctx, url)
 	defer client.Close()

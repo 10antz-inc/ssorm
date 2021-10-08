@@ -11,7 +11,7 @@ import (
 )
 
 func TestInsertDeleteModel(t *testing.T) {
-	url := "projects/spanner-emulator/instances/test/databases/test"
+	url := "projects/spanner-emulator/instances/dev/databases/kagura"
 	ctx := context.Background()
 
 	client, _ := spanner.NewClient(ctx, url)
@@ -19,8 +19,8 @@ func TestInsertDeleteModel(t *testing.T) {
 
 	insert := Singers{}
 	insert.SingerId = 25
-	insert.FirstName = "first21"
-	insert.LastName = spanner.NullString{StringVal: "last21",Valid: true}
+	//insert.FirstName = "first21"
+	insert.LastName = spanner.NullString{StringVal: "last21", Valid: true}
 	insert.TagIDs = []spanner.NullString{{StringVal: "a3eb54bd-0138-4c22-b858-41bbefc5c050", Valid: true}, {StringVal: "a3eb54bd-0138-4c22-b858-41bbefc5c051", Valid: true}}
 	insert.Numbers = []int64{1, 2, 3}
 
@@ -56,7 +56,7 @@ func TestInsertDeleteModel(t *testing.T) {
 }
 
 func TestInsertDeleteWhere(t *testing.T) {
-	url := "projects/spanner-emulator/instances/test/databases/test"
+	url := "projects/spanner-emulator/instances/dev/databases/kagura"
 	ctx := context.Background()
 
 	client, _ := spanner.NewClient(ctx, url)
@@ -64,11 +64,14 @@ func TestInsertDeleteWhere(t *testing.T) {
 
 	insert := Singers{}
 	insert.SingerId = 23
-	insert.FirstName = "first21"
-	insert.LastName = spanner.NullString{StringVal: "last21",Valid: true}
+	//insert.FirstName = "first21"
+	insert.LastName = spanner.NullString{StringVal: "last21", Valid: true}
 	//insert.TestTime = time.Now()
 	_, err := client.ReadWriteTransaction(ctx, func(ctx context.Context, txn *spanner.ReadWriteTransaction) error {
-		count, err := ssorm.Model(&insert).Insert(ctx, txn)
+		count, err := ssorm.SimpleQueryWrite(ctx, txn, "Delete From Singers where SingerId = @singerId", map[string]interface{}{
+			"singerId": 1,
+		})
+		count, err = ssorm.Model(&insert).Insert(ctx, txn)
 		fmt.Println(count)
 		if err != nil {
 			t.Fatalf("Error happened when create singer, got %v", err)
@@ -87,7 +90,7 @@ func TestInsertDeleteWhere(t *testing.T) {
 }
 
 func TestDelete(t *testing.T) {
-	url := "projects/spanner-emulator/instances/test/databases/test"
+	url := "projects/spanner-emulator/instances/dev/databases/kagura"
 	ctx := context.Background()
 
 	client, _ := spanner.NewClient(ctx, url)
@@ -95,8 +98,8 @@ func TestDelete(t *testing.T) {
 
 	insert := Singers{}
 	insert.SingerId = 23
-	insert.FirstName = "first21"
-	insert.LastName = spanner.NullString{StringVal: "last21",Valid: true}
+	//insert.FirstName = "first21"
+	insert.LastName = spanner.NullString{StringVal: "last21", Valid: true}
 
 	_, err := client.ReadWriteTransaction(ctx, func(ctx context.Context, txn *spanner.ReadWriteTransaction) error {
 		count, err := ssorm.Model(&insert).DeleteModel(ctx, txn)

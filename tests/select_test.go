@@ -9,7 +9,8 @@ import (
 )
 
 func TestSelectColumnReadWrite(t *testing.T) {
-	url := "projects/spanner-emulator/instances/test/databases/test"
+	url := "projects/spanner-emulator/instances/dev/databases/kagura"
+
 	ctx := context.Background()
 
 	client, _ := spanner.NewClient(ctx, url)
@@ -17,7 +18,7 @@ func TestSelectColumnReadWrite(t *testing.T) {
 
 	var singers []*Singers
 	_, err := client.ReadWriteTransaction(ctx, func(ctx context.Context, txn *spanner.ReadWriteTransaction) error {
-		err := ssorm.Model(&singers).Select([]string{"SingerId,FirstName"}).Where("SingerId in (?) and FirstName = ?", []int{12, 13, 14, 15}, "Dylan").Limit(1).Order("FirstName, LastName desc").Find(ctx, txn)
+		err := ssorm.Model(&singers).Select([]string{"SingerId,FirstName"}).Where("SingerId in ? and FirstName = ?", []int{12, 13, 14, 15}, "Dylan").Limit(1).Order("FirstName, LastName desc").Find(ctx, txn)
 		return err
 	})
 
@@ -27,7 +28,8 @@ func TestSelectColumnReadWrite(t *testing.T) {
 }
 
 func TestSelectAllColumnReadWrite(t *testing.T) {
-	url := "projects/spanner-emulator/instances/test/databases/test"
+	url := "projects/spanner-emulator/instances/dev/databases/kagura"
+
 	ctx := context.Background()
 
 	client, _ := spanner.NewClient(ctx, url)
@@ -37,9 +39,9 @@ func TestSelectAllColumnReadWrite(t *testing.T) {
 	test := Singers{}
 	utils.GetDeleteColumnName(&singers)
 	utils.GetDeleteColumnName(&test)
-	
+
 	_, err := client.ReadWriteTransaction(ctx, func(ctx context.Context, txn *spanner.ReadWriteTransaction) error {
-		err := ssorm.Model(&singers).Where("SingerId in (?)", []int{12, 13, 14}).Find(ctx, txn)
+		err := ssorm.Model(&singers).Where("SingerId in ?", []int{12, 13, 14}).Find(ctx, txn)
 		return err
 	})
 
@@ -49,7 +51,8 @@ func TestSelectAllColumnReadWrite(t *testing.T) {
 }
 
 func TestSelectColumnReadOnly(t *testing.T) {
-	url := "projects/spanner-emulator/instances/test/databases/test"
+	url := "projects/spanner-emulator/instances/dev/databases/kagura"
+
 	ctx := context.Background()
 
 	client, _ := spanner.NewClient(ctx, url)
@@ -58,8 +61,8 @@ func TestSelectColumnReadOnly(t *testing.T) {
 	defer rtx.Close()
 
 	var singers []*Singers
-	
-	err := ssorm.Model(&singers).Select([]string{"SingerId,FirstName"}).Where("SingerId in (?) and FirstName = ?", []int{12, 13, 14, 15}, "Dylan").Limit(1).Order("FirstName, LastName desc").Find(ctx, rtx)
+
+	err := ssorm.Model(&singers).Select([]string{"SingerId,FirstName"}).Where("SingerId in ? and FirstName = ?", []int{12, 13, 14, 15}, "Dylan").Limit(1).Order("FirstName, LastName desc").Find(ctx, rtx)
 
 	if err != nil {
 		t.Fatalf("Error happened when search singers, got %v", err)
@@ -67,7 +70,8 @@ func TestSelectColumnReadOnly(t *testing.T) {
 }
 
 func TestSelectAllColumnReadOnly(t *testing.T) {
-	url := "projects/spanner-emulator/instances/test/databases/test"
+	url := "projects/spanner-emulator/instances/dev/databases/kagura"
+
 	ctx := context.Background()
 
 	client, _ := spanner.NewClient(ctx, url)
@@ -77,9 +81,11 @@ func TestSelectAllColumnReadOnly(t *testing.T) {
 	defer rtx.Close()
 
 	var singers []*Singers
-	
-	err := ssorm.Model(&singers).Where("SingerId in (?)", []int{12, 13, 14}).Find(ctx, rtx)
 
+	err := ssorm.Model(&singers).Where("SingerId in ?", []int{12, 13, 14}).Find(ctx, rtx)
+	err = ssorm.SimpleQueryRead(ctx, rtx, "select * from Singers where singerId in UNNEST(@singerids)", map[string]interface{}{
+		"singerids": []int{12, 13, 14},
+	}, &singers)
 	if err != nil {
 		t.Fatalf("Error happened when search singers, got %v", err)
 	}

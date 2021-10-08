@@ -17,7 +17,7 @@ type ColumnTable struct {
 }
 
 func TestSelectToJson(t *testing.T) {
-	url := "projects/spanner-emulator/instances/test/databases/test"
+	url := "projects/spanner-emulator/instances/dev/databases/kagura"
 
 	ctx := context.Background()
 
@@ -29,7 +29,7 @@ func TestSelectToJson(t *testing.T) {
 	rtx := client.ReadOnlyTransaction()
 	defer rtx.Close()
 
-	err := ssorm.SimpleQueryRead(ctx, rtx, `SELECT t.column_name as ColumnName, t.spanner_type as SpannerType, FROM information_schema.columns AS t WHERE t.table_name = "Singers"`, &columnTable)
+	err := ssorm.SimpleQueryRead(ctx, rtx, `SELECT t.column_name as ColumnName, t.spanner_type as SpannerType, FROM information_schema.columns AS t WHERE t.table_name = "Singers"`, nil, &columnTable)
 
 	dataTypes := make(map[string]string)
 	for i := 0; i < len(columnTable); i++ {
@@ -55,7 +55,7 @@ func TestSelectToJson(t *testing.T) {
 }
 
 func TestAutoGenerateOrm(t *testing.T) {
-	url := "projects/spanner-emulator/instances/test/databases/test"
+	url := "projects/spanner-emulator/instances/dev/databases/kagura"
 
 	ctx := context.Background()
 
@@ -69,7 +69,7 @@ func TestAutoGenerateOrm(t *testing.T) {
 
 	tableName := "Singers"
 	query := fmt.Sprintf("SELECT t.column_name as ColumnName, t.spanner_type as SpannerType, FROM information_schema.columns AS t WHERE t.table_name = \"%s\"  order by t.ordinal_position", tableName)
-	err := ssorm.SimpleQueryRead(ctx, rtx, query, &columnTable)
+	err := ssorm.SimpleQueryRead(ctx, rtx, query, nil, &columnTable)
 
 	dataTypes := make(map[string]string)
 	columnNames := []string{}

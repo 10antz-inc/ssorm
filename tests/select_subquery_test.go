@@ -8,7 +8,7 @@ import (
 )
 
 func TestSubQueryFirst(t *testing.T) {
-	url := "projects/spanner-emulator/instances/test/databases/test"
+	url := "projects/spanner-emulator/instances/dev/databases/kagura"
 	ctx := context.Background()
 
 	client, _ := spanner.NewClient(ctx, url)
@@ -30,9 +30,8 @@ func TestSubQueryFirst(t *testing.T) {
 	}
 }
 
-
 func TestSubQueryFind(t *testing.T) {
-	url := "projects/spanner-emulator/instances/test/databases/test"
+	url := "projects/spanner-emulator/instances/dev/databases/kagura"
 	ctx := context.Background()
 
 	client, _ := spanner.NewClient(ctx, url)
@@ -41,7 +40,7 @@ func TestSubQueryFind(t *testing.T) {
 	var subSingers []*Singer
 
 	_, err := client.ReadWriteTransaction(ctx, func(ctx context.Context, txn *spanner.ReadWriteTransaction) error {
-		err := ssorm.Model(&subSingers).Where("SingerId > ?", 12).TableName("Singers").AddSub(Albums{}, "").AddSub(Concerts{}, "SingerId > ?", 12).Find(ctx, txn)
+		err := ssorm.Model(&subSingers).Where("SingerId > ? and SingerId > ?", 12, 13).TableName("Singers").AddSub(Albums{}, "").AddSub(Concerts{}, "SingerId > ? and SingerId > ?", 12, 13).Find(ctx, txn)
 		if err != nil {
 			t.Fatalf("Error happened when delete singer, got %v", err)
 		}
