@@ -38,6 +38,7 @@ func Model(model interface{}, opts ...Option) *DB {
 		subBuilder: &SubBuilder{},
 		model:      model,
 		tableName:  utils.GetTableName(model),
+		params:     make(map[string]interface{}),
 		softDelete: false,
 	}
 	return db
@@ -50,6 +51,7 @@ func SoftDeleteModel(model interface{}, opts ...Option) *DB {
 		model:      model,
 		tableName:  utils.GetTableName(model),
 		softDelete: true,
+		params:     make(map[string]interface{}), 
 	}
 	return db
 }
@@ -96,12 +98,12 @@ func (db *DB) DeleteModel(ctx context.Context, spannerTransaction *spanner.ReadW
 	)
 
 	if db.builder.softDelete {
-		query, err = db.builder.buildSoftDeleteModelQuery()
+		query, err := db.builder.buildSoftDeleteModelQuery()
 		if err != nil {
 			return 0, errors.New("no primary key set")
 		}
-		stmt := spanner.Statement{SQL: query}
-		rowCount, err := spannerTransaction.Update(ctx, stmt)
+		rowCount, err := SimpleQueryWrite(ctx, spannerTransaction, query, db.builder.params)
+
 		getLogger().Infof("Update Query: %s", db.builder.query)
 		return rowCount, err
 	}
@@ -111,7 +113,7 @@ func (db *DB) DeleteModel(ctx context.Context, spannerTransaction *spanner.ReadW
 		return 0, err
 	}
 	getLogger().Infof("DELETE Query: %s", db.builder.query)
-	return SimpleQueryWrite(ctx, spannerTransaction, query, db.builder.BuildWhereParam())
+	return SimpleQueryWrite(ctx, spannerTransaction, query, db.builder.params)
 }
 
 func (db *DB) DeleteWhere(ctx context.Context, spannerTransaction *spanner.ReadWriteTransaction) (int64, error) {
@@ -135,7 +137,7 @@ func (db *DB) DeleteWhere(ctx context.Context, spannerTransaction *spanner.ReadW
 		return 0, err
 	}
 	getLogger().Infof("DELETE Query: %s", db.builder.query)
-	return SimpleQueryWrite(ctx, spannerTransaction, query, db.builder.BuildWhereParam())
+	return SimpleQueryWrite(ctx, spannerTransaction, query, db.builder.params)
 }
 
 func (db *DB) First(ctx context.Context, spannerTransaction interface{}) error {
@@ -150,7 +152,7 @@ func (db *DB) First(ctx context.Context, spannerTransaction interface{}) error {
 		query, _ = db.builder.selectQuery()
 	}
 
-	err = SimpleQueryRead(ctx, spannerTransaction, query, db.builder.BuildWhereParam(), db.builder.model)
+	err = SimpleQueryRead(ctx, spannerTransaction, query, db.builder.params, db.builder.model)
 	return err
 }
 
@@ -165,7 +167,7 @@ func (db *DB) Count(ctx context.Context, spannerTransaction interface{}, cnt int
 	}
 	query, err := db.Select([]string{"COUNT(1) AS CNT"}).builder.selectQuery()
 
-	stmt := spanner.Statement{SQL: query, Params: db.builder.BuildWhereParam()}
+	stmt := spanner.Statement{SQL: query, Params: db.builder.params}
 
 	getLogger().Infof("Select Query: %s", stmt.SQL)
 
@@ -206,7 +208,7 @@ func (db *DB) Find(ctx context.Context, spannerTransaction interface{}) error {
 		query, _ = db.builder.selectQuery()
 	}
 
-	err = SimpleQueryRead(ctx, spannerTransaction, query, db.builder.BuildWhereParam(), db.builder.model)
+	err = SimpleQueryRead(ctx, spannerTransaction, query, db.builder.params, db.builder.model)
 	return err
 }
 
@@ -216,7 +218,7 @@ func (db *DB) Insert(ctx context.Context, spannerTransaction *spanner.ReadWriteT
 		return 0, err
 	}
 	getLogger().Infof("Insert Query: %s", db.builder.query)
-	return SimpleQueryWrite(ctx, spannerTransaction, query, db.builder.BuildWhereParam())
+	return SimpleQueryWrite(ctx, spannerTransaction, query, db.builder.params)
 
 }
 
@@ -226,7 +228,7 @@ func (db *DB) Update(ctx context.Context, spannerTransaction *spanner.ReadWriteT
 		return 0, err
 	}
 	getLogger().Infof("Update Query: %s", db.builder.query)
-	return SimpleQueryWrite(ctx, spannerTransaction, query, db.builder.BuildWhereParam())
+	return SimpleQueryWrite(ctx, spannerTransaction, query, db.builder.params)
 
 }
 
@@ -236,7 +238,7 @@ func (db *DB) UpdateColumns(ctx context.Context, spannerTransaction *spanner.Rea
 		return 0, err
 	}
 	getLogger().Infof("Update Query: %s", db.builder.query)
-	return SimpleQueryWrite(ctx, spannerTransaction, query, db.builder.BuildWhereParam())
+	return SimpleQueryWrite(ctx, spannerTransaction, query, db.builder.params)
 }
 func (db *DB) UpdateParams(ctx context.Context, spannerTransaction *spanner.ReadWriteTransaction, in map[string]interface{}) (int64, error) {
 	query, err := db.builder.buildUpdateParamsQuery(in)
@@ -244,7 +246,7 @@ func (db *DB) UpdateParams(ctx context.Context, spannerTransaction *spanner.Read
 		return 0, err
 	}
 	getLogger().Infof("Update Query: %s", db.builder.query)
-	return SimpleQueryWrite(ctx, spannerTransaction, query, db.builder.BuildWhereParam())
+	return SimpleQueryWrite(ctx, spannerTransaction, query, db.builder.params)
 }
 
 func SimpleQueryRead(ctx context.Context, spannerTransaction interface{}, query string, params map[string]interface{}, result interface{}) error {

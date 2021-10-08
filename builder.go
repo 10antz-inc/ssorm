@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
-	"strconv"
 	"strings"
 
 	"github.com/10antz-inc/ssorm/utils"
@@ -23,6 +22,7 @@ type Builder struct {
 	subBuilder      *SubBuilder
 	softDelete      bool
 	softDeleteQuery string
+	params          map[string]interface{}
 }
 
 type SubBuilder struct {
@@ -110,13 +110,16 @@ func (builder *Builder) buildWhereCondition(conditions map[string]interface{}, p
 
 	buff := bytes.NewBuffer([]byte{})
 	i := 0
+
 	for _, s := range query {
 		if s == '?' {
+			id := fmt.Sprintf("@where_%s%d", prefix, i)
 			if reflect.ValueOf(args[i]).Kind() == reflect.Slice {
-				buff.WriteString(fmt.Sprintf("UNNEST(@where_%s%d)", prefix, i))
+				buff.WriteString(fmt.Sprintf("UNNEST(%s)", id))
 			} else {
-				buff.WriteString(fmt.Sprintf("@where_%s%d", prefix, i))
+				buff.WriteString(id)
 			}
+			builder.params[fmt.Sprintf("where_%s%d", prefix, i)] = args[i]
 			i++
 		} else {
 			buff.WriteRune(s)
@@ -166,6 +169,7 @@ func (builder *Builder) buildSubQuery() (string, error) {
 		query := fmt.Sprintf("SELECT AS STRUCT * FROM %s", tableName)
 		if builder.subBuilder.conditions[i] != nil {
 			condition := builder.buildWhereCondition(builder.subBuilder.conditions[i], fmt.Sprintf("sub_%d_", index))
+
 			if condition != "" {
 				query = fmt.Sprintf("%s WHERE %s", query, condition)
 			}
@@ -183,7 +187,6 @@ func (builder *Builder) buildSubQuery() (string, error) {
 }
 
 func (builder *Builder) buildInsertModelQuery() (string, error) {
-	params := make(map[string]interface{})
 	builder.query = fmt.Sprintf("INSERT INTO  %s", builder.tableName)
 	e := reflect.Indirect(reflect.ValueOf(builder.model))
 	var (
@@ -192,7 +195,9 @@ func (builder *Builder) buildInsertModelQuery() (string, error) {
 	)
 	for i := 0; i < e.NumField(); i++ {
 		addColumn := true
-		tag, varName, varValue, varType := utils.ReflectValues(e, i)
+		//isSlice := false
+		isSpannerValue := false
+		tag, varName, varValue, _ := utils.ReflectValues(e, i)
 
 		if tag.Get(utils.SSORM_TAG_KEY) == utils.SSORM_TAG_IGNORE_WRITE {
 			continue
@@ -202,36 +207,30 @@ func (builder *Builder) buildInsertModelQuery() (string, error) {
 			addColumn = false
 		}
 
-		format := "%v"
-		if utils.IsTypeString(varType) {
-			format = "\"%v\""
-		}
 		switch tag.Get(utils.SSORM_TAG_KEY) {
 		case utils.SSORM_TAG_CREATE_TIME:
+			isSpannerValue = true
 			varValue = "CURRENT_TIMESTAMP()"
 			break
 		case utils.SSORM_TAG_UPDATE_TIME:
+			isSpannerValue = true
 			varValue = "CURRENT_TIMESTAMP()"
 			break
 		case utils.SSORM_TAG_DELETE_TIME:
 			addColumn = false
 			break
-		default:
-			if utils.IsTime(varValue) {
-				varValue = utils.GetTimestampStr(varValue)
-			}
-
-			if varType.Kind() == reflect.Slice || varType.Kind() == reflect.Array {
-				varValue = utils.GetArrayStr(varValue, varType)
-			}
 		}
 
 		if addColumn {
-			cols = append(cols, fmt.Sprintf("%s", varName))
-			if utils.IsTime(varType) {
-				format = "\"%v\""
+			fmt.Println(builder.params)
+			if !isSpannerValue {
+				vals = append(vals, fmt.Sprintf("@%s", varName))
+				builder.params[varName] = varValue
+
+			} else {
+				vals = append(vals, fmt.Sprintf("%s", varValue))
 			}
-			vals = append(vals, fmt.Sprintf(format, varValue))
+			cols = append(cols, fmt.Sprintf("%s", varName))
 		}
 
 	}
@@ -240,6 +239,7 @@ func (builder *Builder) buildInsertModelQuery() (string, error) {
 }
 
 func (builder *Builder) buildUpdateModelQuery() (string, error) {
+
 	builder.query = fmt.Sprintf("UPDATE %s SET", builder.tableName)
 	e := reflect.Indirect(reflect.ValueOf(builder.model))
 
@@ -265,7 +265,8 @@ func (builder *Builder) buildUpdateModelQuery() (string, error) {
 
 		switch tag.Get(utils.SSORM_TAG_KEY) {
 		case utils.SSORM_TAG_PRIMARY:
-			conditions = append(conditions, fmt.Sprintf(format, varName, varValue))
+			conditions = append(conditions, fmt.Sprintf("%s=@%s", varName, varName))
+			builder.params[varName] = varValue
 			break
 		case utils.SSORM_TAG_UPDATE_TIME:
 			updateData = append(updateData, fmt.Sprintf(format, varName, "CURRENT_TIMESTAMP()"))
@@ -275,14 +276,15 @@ func (builder *Builder) buildUpdateModelQuery() (string, error) {
 		case utils.SSORM_TAG_DELETE_TIME:
 			break
 		default:
-			if utils.IsTime(varValue) {
-				varValue = utils.GetTimestampStr(varValue)
-			}
-
-			if varType.Kind() == reflect.Slice || varType.Kind() == reflect.Array {
-				varValue = utils.GetArrayStr(varValue, varType)
-			}
-			updateData = append(updateData, fmt.Sprintf(format, varName, varValue))
+			//if utils.IsTime(varValue) {
+			//	varValue = utils.GetTimestampStr(varValue)
+			//}
+			//
+			//if varType.Kind() == reflect.Slice || varType.Kind() == reflect.Array {
+			//	varValue = utils.GetArrayStr(varValue, varType)
+			//}
+			updateData = append(updateData, fmt.Sprintf("%s=@%s", varName, varName))
+			builder.params[varName] = varValue
 		}
 
 	}
@@ -303,6 +305,7 @@ func (builder *Builder) buildUpdateModelQuery() (string, error) {
 }
 
 func (builder *Builder) buildUpdateColumnQuery(in []string) (string, error) {
+
 	builder.query = fmt.Sprintf("UPDATE %s SET", builder.tableName)
 	e := reflect.Indirect(reflect.ValueOf(builder.model))
 
@@ -323,7 +326,8 @@ func (builder *Builder) buildUpdateColumnQuery(in []string) (string, error) {
 
 		switch tag.Get(utils.SSORM_TAG_KEY) {
 		case utils.SSORM_TAG_PRIMARY:
-			conditions = append(conditions, fmt.Sprintf(format, varName, varValue))
+			conditions = append(conditions, fmt.Sprintf("%s=@%s", varName, varName))
+			builder.params[varName] = varValue
 			break
 		case utils.SSORM_TAG_CREATE_TIME:
 			break
@@ -334,17 +338,8 @@ func (builder *Builder) buildUpdateColumnQuery(in []string) (string, error) {
 			break
 		default:
 			if utils.ArrayContains(in, varName) {
-				if utils.IsTime(varValue) {
-					varValue = utils.GetTimestampStr(varValue)
-				}
-				if varType.Kind() == reflect.Slice || varType.Kind() == reflect.Array {
-					varValue = utils.GetArrayStr(varValue, varType)
-				}
-				format := "%s=%v"
-				if utils.IsTypeString(varType) {
-					format = "%s=\"%v\""
-				}
-				updateData = append(updateData, fmt.Sprintf(format, varName, varValue))
+				updateData = append(updateData, fmt.Sprintf("%s=@%s", varName, varName))
+				builder.params[varName] = varValue
 			}
 		}
 
@@ -363,6 +358,7 @@ func (builder *Builder) buildUpdateColumnQuery(in []string) (string, error) {
 	return builder.query, nil
 }
 func (builder *Builder) buildUpdateParamsQuery(in map[string]interface{}) (string, error) {
+
 	if builder.whereConditions == nil || len(builder.whereConditions) == 0 {
 		return "", errors.New("no update condition set")
 	}
@@ -373,15 +369,8 @@ func (builder *Builder) buildUpdateParamsQuery(in map[string]interface{}) (strin
 	)
 
 	for k, v := range in {
-		varType := reflect.TypeOf(v)
-		if varType.Kind() == reflect.Slice || varType.Kind() == reflect.Array {
-			v = utils.GetArrayStr(v, varType)
-		}
-		format := "%s=%v"
-		if utils.IsTypeString(varType) {
-			format = "%s=\"%v\""
-		}
-		updateData = append(updateData, fmt.Sprintf(format, k, v))
+		updateData = append(updateData, fmt.Sprintf("%s=@%s", k, k))
+		builder.params[k] = v
 	}
 
 	e := reflect.Indirect(reflect.ValueOf(builder.model))
@@ -405,21 +394,21 @@ func (builder *Builder) buildUpdateParamsQuery(in map[string]interface{}) (strin
 	if condition != "" {
 		builder.query = fmt.Sprintf("%s WHERE %s", builder.query, condition)
 	}
+
 	return builder.query, nil
 }
 
 func (builder *Builder) buildDeleteModelQuery() (string, error) {
+
 	builder.query = fmt.Sprintf("DELETE FROM %s WHERE", builder.tableName)
 	e := reflect.Indirect(reflect.ValueOf(builder.model))
 	var replacement []string
 	for i := 0; i < e.NumField(); i++ {
-		tag, varName, varValue, varType := utils.ReflectValues(e, i)
-		format := "%s=%v"
+		tag, varName, varValue, _ := utils.ReflectValues(e, i)
+
 		if tag.Get(utils.SSORM_TAG_KEY) == utils.SSORM_TAG_PRIMARY {
-			if utils.IsTypeString(varType) {
-				format = "%s=\"%v\""
-			}
-			replacement = append(replacement, fmt.Sprintf(format, varName, varValue))
+			replacement = append(replacement, fmt.Sprintf("%s=@%s", varName, varName))
+			builder.params[varName] = varValue
 		}
 	}
 	builder.query = fmt.Sprintf("%s %s", builder.query, strings.Join(replacement, " AND "))
@@ -443,6 +432,7 @@ func (builder *Builder) buildDeleteWhereQuery() (string, error) {
 }
 
 func (builder *Builder) buildSoftDeleteModelQuery() (string, error) {
+
 	builder.query = fmt.Sprintf("UPDATE %s SET", builder.tableName)
 	e := reflect.Indirect(reflect.ValueOf(builder.model))
 
@@ -459,7 +449,8 @@ func (builder *Builder) buildSoftDeleteModelQuery() (string, error) {
 		}
 		switch tag.Get(utils.SSORM_TAG_KEY) {
 		case utils.SSORM_TAG_PRIMARY:
-			conditions = append(conditions, fmt.Sprintf(format, varName, varValue))
+			conditions = append(conditions, fmt.Sprintf("%s=@%s", varName, varName))
+			builder.params[varName] = varValue
 			break
 		case utils.SSORM_TAG_UPDATE_TIME:
 			updateData = append(updateData, fmt.Sprintf(format, varName, "CURRENT_TIMESTAMP()"))
@@ -511,25 +502,25 @@ func (builder *Builder) buildSoftDeleteWhereQuery() (string, error) {
 	return builder.query, nil
 }
 
-func (builder *Builder) BuildWhereParam() map[string]interface{} {
-	result := make(map[string]interface{})
-	clause := builder.whereConditions
-	if clause != nil {
-		args := clause["args"].([]interface{})
-		for i := 0; i < len(args); i++ {
-			result["where_"+strconv.Itoa(i)] = args[i]
-		}
-	}
-
-	for i, _ := range builder.subBuilder.subModels {
-		clause = builder.subBuilder.conditions[i]
-		if clause != nil {
-			args := clause["args"].([]interface{})
-			for j := 0; j < len(args); j++ {
-				result["where_"+fmt.Sprintf("sub_%d_%d", i, j)] = args[j]
-			}
-		}
-	}
-
-	return result
-}
+//func (builder *Builder) BuildWhereParam() map[string]interface{} {
+//	result := make(map[string]interface{})
+//	clause := builder.whereConditions
+//	if clause != nil {
+//		args := clause["args"].([]interface{})
+//		for i := 0; i < len(args); i++ {
+//			result["where_"+strconv.Itoa(i)] = args[i]
+//		}
+//	}
+//
+//	for i, _ := range builder.subBuilder.subModels {
+//		clause = builder.subBuilder.conditions[i]
+//		if clause != nil {
+//			args := clause["args"].([]interface{})
+//			for j := 0; j < len(args); j++ {
+//				result["where_"+fmt.Sprintf("sub_%d_%d", i, j)] = args[j]
+//			}
+//		}
+//	}
+//
+//	return result
+//}
