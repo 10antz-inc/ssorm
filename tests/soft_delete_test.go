@@ -9,7 +9,7 @@ import (
 )
 
 func TestSoftDeleteModel(t *testing.T) {
-	url := "projects/spanner-emulator/instances/test/databases/test"
+	url := "projects/spanner-emulator/instances/dev/databases/kagura"
 	ctx := context.Background()
 
 	client, _ := spanner.NewClient(ctx, url)
@@ -17,7 +17,7 @@ func TestSoftDeleteModel(t *testing.T) {
 
 	insert := Singers{}
 	insert.SingerId = 12
-	insert.FirstName = "updateModel"
+	//insert.FirstName = "updateModel"
 	insert.LastName =spanner.NullString{StringVal: "updateFlastNameModel",Valid: true}
 
 	var singers []*Singers
@@ -29,7 +29,7 @@ func TestSoftDeleteModel(t *testing.T) {
 		err := ssorm.SoftDeleteModel(&singers).Find(ctx, txn)
 		err = ssorm.SoftDeleteModel(&subSingers).Where("SingerId > ?", 12).TableName("Singers").AddSub(Albums{}, "").AddSub(Concerts{}, "SingerId > ?", 12).Find(ctx, txn)
 		err = ssorm.SoftDeleteModel(&singers).Where("SingerId = 13").Find(ctx, txn)
-		err = ssorm.SoftDeleteModel(insert).Where("SingerId in (?)", []int{12, 13, 14, 15}).Count(ctx, txn, &count)
+		err = ssorm.SoftDeleteModel(insert).Where("SingerId in ?", []int{12, 13, 14, 15}).Count(ctx, txn, &count)
 
 		insert.SingerId = 100
 		_, err = ssorm.SoftDeleteModel(&insert).Insert(ctx, txn)

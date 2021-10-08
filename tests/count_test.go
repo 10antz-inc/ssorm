@@ -8,7 +8,7 @@ import (
 )
 
 func TestCountReadWrite(t *testing.T) {
-	url := "projects/spanner-emulator/instances/test/databases/test"
+	url := "projects/spanner-emulator/instances/dev/databases/kagura"
 	ctx := context.Background()
 
 	client, _ := spanner.NewClient(ctx, url)
@@ -19,7 +19,7 @@ func TestCountReadWrite(t *testing.T) {
 		count  int64
 	)
 	_, err := client.ReadWriteTransaction(ctx, func(ctx context.Context, txn *spanner.ReadWriteTransaction) error {
-		err := ssorm.Model(singer).Where("SingerId in (?)", []int{12, 13, 14, 15}).Count(ctx, txn, &count)
+		err := ssorm.Model(singer).Where("SingerId in ?", []int{12, 13, 14, 15}).Count(ctx, txn, &count)
 		return err
 	})
 
@@ -29,7 +29,7 @@ func TestCountReadWrite(t *testing.T) {
 }
 
 func TestCountReadOnly(t *testing.T) {
-	url := "projects/spanner-emulator/instances/test/databases/test"
+	url := "projects/spanner-emulator/instances/dev/databases/kagura"
 	ctx := context.Background()
 
 	client, _ := spanner.NewClient(ctx, url)
@@ -42,7 +42,7 @@ func TestCountReadOnly(t *testing.T) {
 		singer *Singers
 		count  int64
 	)
-	err := ssorm.Model(singer).Where("SingerId in (?)", []int{12, 13, 14, 15}).Count(ctx, rtx, &count)
+	err := ssorm.Model(singer).Where("SingerId in ?", []int{12, 13, 14, 15}).Count(ctx, rtx, &count)
 
 	if err != nil {
 		t.Fatalf("Error happened when count singers, got %v", err)

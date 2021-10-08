@@ -8,7 +8,7 @@ import (
 )
 
 func TestGetAllColumnReadWrite(t *testing.T) {
-	url := "projects/spanner-emulator/instances/test/databases/test"
+	url := "projects/spanner-emulator/instances/dev/databases/kagura"
 	ctx := context.Background()
 
 	client, _ := spanner.NewClient(ctx, url)
@@ -17,7 +17,7 @@ func TestGetAllColumnReadWrite(t *testing.T) {
 	singer := Singers{}
 	//singer.TestTime = time.Now()
 	_, err := client.ReadWriteTransaction(ctx, func(ctx context.Context, txn *spanner.ReadWriteTransaction) error {
-		err := ssorm.Model(&singer).Where("SingerId in (?)", []int{12, 13, 14}).First(ctx, txn)
+		err := ssorm.Model(&singer).Where("SingerId in ?", []int{12, 13, 14}).First(ctx, txn)
 		return err
 	})
 
@@ -27,7 +27,7 @@ func TestGetAllColumnReadWrite(t *testing.T) {
 }
 
 func TestGetColumnReadWrite(t *testing.T) {
-	url := "projects/spanner-emulator/instances/test/databases/test"
+	url := "projects/spanner-emulator/instances/dev/databases/kagura"
 	ctx := context.Background()
 
 	client, _ := spanner.NewClient(ctx, url)
@@ -35,7 +35,7 @@ func TestGetColumnReadWrite(t *testing.T) {
 
 	singer := Singers{}
 	_, err := client.ReadWriteTransaction(ctx, func(ctx context.Context, txn *spanner.ReadWriteTransaction) error {
-		err := ssorm.Model(&singer).Select([]string{"SingerId,FirstName"}).Where("SingerId in (?)", []int{12, 13, 14}).First(ctx, txn)
+		err := ssorm.Model(&singer).Select([]string{"SingerId,FirstName"}).Where("SingerId in ?", []int{12, 13, 14}).First(ctx, txn)
 		return err
 	})
 
@@ -45,7 +45,7 @@ func TestGetColumnReadWrite(t *testing.T) {
 }
 
 func TestGetAllColumnReadOnly(t *testing.T) {
-	url := "projects/spanner-emulator/instances/test/databases/test"
+	url := "projects/spanner-emulator/instances/dev/databases/kagura"
 	ctx := context.Background()
 
 	client, _ := spanner.NewClient(ctx, url)
@@ -55,7 +55,7 @@ func TestGetAllColumnReadOnly(t *testing.T) {
 	defer rtx.Close()
 
 	singer := Singers{}
-	err := ssorm.Model(&singer).Where("SingerId in (?)", []int{12, 13, 14}).First(ctx, rtx)
+	err := ssorm.Model(&singer).Where("SingerId in ?", []int{12, 13, 14}).First(ctx, rtx)
 
 	if err != nil {
 		t.Fatalf("Error happened when get singer, got %v", err)
@@ -63,7 +63,7 @@ func TestGetAllColumnReadOnly(t *testing.T) {
 }
 
 func TestGetColumnReadOnly(t *testing.T) {
-	url := "projects/spanner-emulator/instances/test/databases/test"
+	url := "projects/spanner-emulator/instances/dev/databases/kagura"
 	ctx := context.Background()
 
 	client, _ := spanner.NewClient(ctx, url)
@@ -74,7 +74,7 @@ func TestGetColumnReadOnly(t *testing.T) {
 
 	singer := Singers{}
 	err := ssorm.Model(&singer).Select([]string{"SingerId,FirstName,LastName"}).
-		Where("SingerId in (?) and LastName = ? ",
+		Where("SingerId in ? and LastName = ? ",
 			[]int{12, 13, 14},
 			spanner.NullString{StringVal: "Morales",Valid: true},
 			).First(ctx, rtx)

@@ -198,3 +198,4 @@ func IsTypeString(valType reflect.Type) bool {
 	}
 	return false
 }
+

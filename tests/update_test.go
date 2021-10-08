@@ -10,7 +10,7 @@ import (
 )
 
 func TestUpdateModel(t *testing.T) {
-	url := "projects/spanner-emulator/instances/test/databases/test"
+	url := "projects/spanner-emulator/instances/dev/databases/kagura"
 	ctx := context.Background()
 
 	client, _ := spanner.NewClient(ctx, url)
@@ -18,7 +18,7 @@ func TestUpdateModel(t *testing.T) {
 
 	insert := Singers{}
 	insert.SingerId = 12
-	insert.FirstName = "updateModel"
+	//insert.FirstName = "updateModel"
 	insert.LastName = spanner.NullString{StringVal: "last21",Valid: true}
 	insert.TagIDs = []spanner.NullString{{StringVal: "a3eb54bd-0138-4c22-b858-41bbefc5c050", Valid: true}, {StringVal: "a3eb54bd-0138-4c22-b858-41bbefc5c051", Valid: true}}
 	insert.Numbers = []int64{1, 2, 3}
@@ -36,14 +36,14 @@ func TestUpdateModel(t *testing.T) {
 }
 
 func TestUpdateMap(t *testing.T) {
-	url := "projects/spanner-emulator/instances/test/databases/test"
+	url := "projects/spanner-emulator/instances/dev/databases/kagura"
 	ctx := context.Background()
 
 	client, _ := spanner.NewClient(ctx, url)
 	defer client.Close()
 	update := Singers{}
 	update.SingerId = 12
-	update.FirstName = "updateName"
+	//update.FirstName = "updateName"
 	update.LastName = spanner.NullString{StringVal: "last21",Valid: true}
 	update.Numbers = []int64{10, 11, 12}
 	
@@ -61,14 +61,14 @@ func TestUpdateMap(t *testing.T) {
 }
 
 func TestUpdateWhere(t *testing.T) {
-	url := "projects/spanner-emulator/instances/test/databases/test"
+	url := "projects/spanner-emulator/instances/dev/databases/kagura"
 	ctx := context.Background()
 
 	client, _ := spanner.NewClient(ctx, url)
 	defer client.Close()
 	insert := Singers{}
 	insert.SingerId = 12
-	insert.FirstName = "updateName"
+	//insert.FirstName = "updateName"
 	insert.LastName = spanner.NullString{StringVal: "last21",Valid: true}
 	
 	_, err := client.ReadWriteTransaction(ctx, func(ctx context.Context, txn *spanner.ReadWriteTransaction) error {

@@ -9,7 +9,8 @@ import (
 
 type Singers struct {
 	SingerId        int64  `ssorm_key:"primary"`
-	FirstName       string `spanner:"FirstName"`
+	Name            string `spanner:"FirstName"`
+	FistInt         int64  `ssorm_key:"ignore_write"`
 	LastName        spanner.NullString
 	TestTime        spanner.NullTime     `spanner:"TestTime"` //NULL を許容する場合必ず、spanner.NullTimeを指定すること
 	TestSpannerTime spanner.NullTime     `spanner:"TestSpannerTime"`
@@ -21,8 +22,8 @@ type Singers struct {
 }
 
 type Singer struct {
-	SingerId        int64  `ssorm_key:"primary"`
-	FirstName       string `spanner:"FirstName"`
+	SingerId        int64 `ssorm_key:"primary"`
+	FirstName       string
 	LastName        spanner.NullString
 	LastName2       spanner.NullString
 	TestTime        spanner.NullTime     `spanner:"TestTime"` //NULL を許容する場合必ず、spanner.NullTimeを指定すること
