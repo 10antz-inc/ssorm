@@ -303,7 +303,7 @@ func (builder *Builder) buildUpdateModelQuery() (string, error) {
 	return builder.query, nil
 }
 
-func (builder *Builder) buildUpdateColumnQuery(in []string) (string, error) {
+func (builder *Builder) buildUpdateColumnQuery(in []string, isOmit bool) (string, error) {
 
 	builder.query = fmt.Sprintf("UPDATE %s SET", builder.tableName)
 	e := reflect.Indirect(reflect.ValueOf(builder.model))
@@ -311,6 +311,7 @@ func (builder *Builder) buildUpdateColumnQuery(in []string) (string, error) {
 	var (
 		conditions []string
 		updateData []string
+		addValue   bool
 	)
 
 	for i := 0; i < e.NumField(); i++ {
@@ -336,7 +337,13 @@ func (builder *Builder) buildUpdateColumnQuery(in []string) (string, error) {
 			updateData = append(updateData, fmt.Sprintf(format, varName, "CURRENT_TIMESTAMP()"))
 			break
 		default:
-			if utils.ArrayContains(in, varName) {
+
+			if isOmit {
+				addValue = !utils.ArrayContains(in, varName)
+			} else {
+				addValue = utils.ArrayContains(in, varName)
+			}
+			if addValue {
 				updateData = append(updateData, fmt.Sprintf("%s=@%s", varName, varName))
 				builder.params[varName] = varValue
 			}

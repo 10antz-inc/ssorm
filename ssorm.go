@@ -231,13 +231,23 @@ func (db *DB) Update(ctx context.Context, spannerTransaction *spanner.ReadWriteT
 }
 
 func (db *DB) UpdateColumns(ctx context.Context, spannerTransaction *spanner.ReadWriteTransaction, in []string) (int64, error) {
-	query, err := db.builder.buildUpdateColumnQuery(in)
+	query, err := db.builder.buildUpdateColumnQuery(in, false)
 	if err != nil {
 		return 0, err
 	}
 	getLogger().Infof("Update Query: %s Param: %v", db.builder.query, db.builder.params)
 	return SimpleQueryWrite(ctx, spannerTransaction, query, db.builder.params)
 }
+
+func (db *DB) UpdateOmit(ctx context.Context, spannerTransaction *spanner.ReadWriteTransaction, in []string) (int64, error) {
+	query, err := db.builder.buildUpdateColumnQuery(in, true)
+	if err != nil {
+		return 0, err
+	}
+	getLogger().Infof("Update Query: %s Param: %v", db.builder.query, db.builder.params)
+	return SimpleQueryWrite(ctx, spannerTransaction, query, db.builder.params)
+}
+
 func (db *DB) UpdateParams(ctx context.Context, spannerTransaction *spanner.ReadWriteTransaction, in map[string]interface{}) (int64, error) {
 	query, err := db.builder.buildUpdateParamsQuery(in)
 	if err != nil {
