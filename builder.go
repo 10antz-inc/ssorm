@@ -311,7 +311,7 @@ func (builder *Builder) buildUpdateColumnQuery(in []string, isOmit bool) (string
 	var (
 		conditions []string
 		updateData []string
-		addValue   bool
+		addColumn  bool
 	)
 
 	for i := 0; i < e.NumField(); i++ {
@@ -339,11 +339,11 @@ func (builder *Builder) buildUpdateColumnQuery(in []string, isOmit bool) (string
 		default:
 
 			if isOmit {
-				addValue = !utils.ArrayContains(in, varName)
+				addColumn = !utils.ArrayContains(in, varName)
 			} else {
-				addValue = utils.ArrayContains(in, varName)
+				addColumn = utils.ArrayContains(in, varName)
 			}
-			if addValue {
+			if addColumn {
 				updateData = append(updateData, fmt.Sprintf("%s=@%s", varName, varName))
 				builder.params[varName] = varValue
 			}
