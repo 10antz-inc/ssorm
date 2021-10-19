@@ -11,7 +11,7 @@ import (
 )
 
 func TestInsertDeleteModel(t *testing.T) {
-	url := "projects/spanner-emulator/instances/dev/databases/kagura"
+	url := "projects/spanner-emulator/instances/test/databases/test"
 	ctx := context.Background()
 
 	client, _ := spanner.NewClient(ctx, url)
@@ -56,7 +56,7 @@ func TestInsertDeleteModel(t *testing.T) {
 }
 
 func TestInsertDeleteWhere(t *testing.T) {
-	url := "projects/spanner-emulator/instances/dev/databases/kagura"
+	url := "projects/spanner-emulator/instances/test/databases/test"
 	ctx := context.Background()
 
 	client, _ := spanner.NewClient(ctx, url)
@@ -90,7 +90,7 @@ func TestInsertDeleteWhere(t *testing.T) {
 }
 
 func TestDelete(t *testing.T) {
-	url := "projects/spanner-emulator/instances/dev/databases/kagura"
+	url := "projects/spanner-emulator/instances/test/databases/test"
 	ctx := context.Background()
 
 	client, _ := spanner.NewClient(ctx, url)

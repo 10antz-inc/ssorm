@@ -9,7 +9,7 @@ import (
 )
 
 func TestSelectColumnReadWrite(t *testing.T) {
-	url := "projects/spanner-emulator/instances/dev/databases/kagura"
+	url := "projects/spanner-emulator/instances/test/databases/test"
 
 	ctx := context.Background()
 
@@ -28,7 +28,7 @@ func TestSelectColumnReadWrite(t *testing.T) {
 }
 
 func TestSelectAllColumnReadWrite(t *testing.T) {
-	url := "projects/spanner-emulator/instances/dev/databases/kagura"
+	url := "projects/spanner-emulator/instances/test/databases/test"
 
 	ctx := context.Background()
 
@@ -51,7 +51,7 @@ func TestSelectAllColumnReadWrite(t *testing.T) {
 }
 
 func TestSelectColumnReadOnly(t *testing.T) {
-	url := "projects/spanner-emulator/instances/dev/databases/kagura"
+	url := "projects/spanner-emulator/instances/test/databases/test"
 
 	ctx := context.Background()
 
@@ -70,7 +70,7 @@ func TestSelectColumnReadOnly(t *testing.T) {
 }
 
 func TestSelectAllColumnReadOnly(t *testing.T) {
-	url := "projects/spanner-emulator/instances/dev/databases/kagura"
+	url := "projects/spanner-emulator/instances/test/databases/test"
 
 	ctx := context.Background()
 

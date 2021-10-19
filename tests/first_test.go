@@ -8,7 +8,7 @@ import (
 )
 
 func TestGetAllColumnReadWrite(t *testing.T) {
-	url := "projects/spanner-emulator/instances/dev/databases/kagura"
+	url := "projects/spanner-emulator/instances/test/databases/test"
 	ctx := context.Background()
 
 	client, _ := spanner.NewClient(ctx, url)
@@ -27,7 +27,7 @@ func TestGetAllColumnReadWrite(t *testing.T) {
 }
 
 func TestGetColumnReadWrite(t *testing.T) {
-	url := "projects/spanner-emulator/instances/dev/databases/kagura"
+	url := "projects/spanner-emulator/instances/test/databases/test"
 	ctx := context.Background()
 
 	client, _ := spanner.NewClient(ctx, url)
@@ -45,7 +45,7 @@ func TestGetColumnReadWrite(t *testing.T) {
 }
 
 func TestGetAllColumnReadOnly(t *testing.T) {
-	url := "projects/spanner-emulator/instances/dev/databases/kagura"
+	url := "projects/spanner-emulator/instances/test/databases/test"
 	ctx := context.Background()
 
 	client, _ := spanner.NewClient(ctx, url)
@@ -63,7 +63,7 @@ func TestGetAllColumnReadOnly(t *testing.T) {
 }
 
 func TestGetColumnReadOnly(t *testing.T) {
-	url := "projects/spanner-emulator/instances/dev/databases/kagura"
+	url := "projects/spanner-emulator/instances/test/databases/test"
 	ctx := context.Background()
 
 	client, _ := spanner.NewClient(ctx, url)

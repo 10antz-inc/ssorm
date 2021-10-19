@@ -9,7 +9,7 @@ import (
 )
 
 func TestSimpleQueryRead(t *testing.T) {
-	url := "projects/spanner-emulator/instances/dev/databases/kagura"
+	url := "projects/spanner-emulator/instances/test/databases/test"
 	ctx := context.Background()
 
 	client, _ := spanner.NewClient(ctx, url)
@@ -32,7 +32,7 @@ func TestSimpleQueryRead(t *testing.T) {
 }
 
 func TestSimpleQueryWrite(t *testing.T) {
-	url := "projects/spanner-emulator/instances/dev/databases/kagura"
+	url := "projects/spanner-emulator/instances/test/databases/test"
 	ctx := context.Background()
 
 	client, _ := spanner.NewClient(ctx, url)

@@ -10,7 +10,7 @@ import (
 )
 
 func TestUpdateModel(t *testing.T) {
-	url := "projects/spanner-emulator/instances/dev/databases/kagura"
+	url := "projects/spanner-emulator/instances/test/databases/test"
 	ctx := context.Background()
 
 	client, _ := spanner.NewClient(ctx, url)
@@ -35,7 +35,7 @@ func TestUpdateModel(t *testing.T) {
 }
 
 func TestUpdateMap(t *testing.T) {
-	url := "projects/spanner-emulator/instances/dev/databases/kagura"
+	url := "projects/spanner-emulator/instances/test/databases/test"
 	ctx := context.Background()
 
 	client, _ := spanner.NewClient(ctx, url)
@@ -68,7 +68,7 @@ func TestUpdateMap(t *testing.T) {
 }
 
 func TestUpdateWhere(t *testing.T) {
-	url := "projects/spanner-emulator/instances/dev/databases/kagura"
+	url := "projects/spanner-emulator/instances/test/databases/test"
 	ctx := context.Background()
 
 	client, _ := spanner.NewClient(ctx, url)
