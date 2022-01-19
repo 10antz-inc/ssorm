@@ -301,7 +301,9 @@ func SimpleQueryRead(ctx context.Context, spannerTransaction interface{}, query 
 			}
 			results := reflect.Indirect(reflect.ValueOf(result))
 			elem := reflect.New(resultType).Interface()
-			row.ToStruct(elem)
+			if err := row.ToStruct(elem); err != nil {
+				return fmt.Errorf("failed to struct: %w", err)
+			}
 
 			if isPtr {
 				results.Set(reflect.Append(results, reflect.ValueOf(elem).Elem().Addr()))
@@ -319,7 +321,9 @@ func SimpleQueryRead(ctx context.Context, spannerTransaction interface{}, query 
 				return err
 			}
 
-			row.ToStruct(result)
+			if err := row.ToStruct(result); err != nil {
+				return fmt.Errorf("failed to struct: %w", err)
+			}
 			break
 		}
 	}
