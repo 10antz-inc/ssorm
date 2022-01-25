@@ -128,7 +128,7 @@ func (builder *Builder) buildWhereCondition(conditions map[string]interface{}, p
 	return buff.String()
 }
 
-func (builder *Builder) buildCondition() error {
+func (builder *Builder) buildCondition() {
 	condition := builder.buildWhereCondition(builder.whereConditions, "")
 	if condition != "" {
 		builder.query = fmt.Sprintf("%s WHERE %s", builder.query, condition)
@@ -136,26 +136,23 @@ func (builder *Builder) buildCondition() error {
 	builder.buildOrders()
 	builder.buildLimit()
 	builder.buildOffset()
-	return nil
 }
 
-func (builder *Builder) selectQuery() (string, error) {
-	err := builder.buildSelectQuery()
-	err = builder.buildCondition()
-	return builder.query, err
+func (builder *Builder) selectQuery() string {
+	builder.buildSelectQuery()
+	builder.buildCondition()
+	return builder.query
 }
 
-func (builder *Builder) buildSelectQuery() error {
+func (builder *Builder) buildSelectQuery() {
 	if builder.selects != nil {
 		selectQuery := strings.Join(builder.selects, ",")
 		builder.query = fmt.Sprintf("SELECT %s FROM %s", selectQuery, builder.tableName)
-		return nil
 	}
 	builder.query = fmt.Sprintf("SELECT * FROM %s", builder.tableName)
-	return nil
 }
 
-func (builder *Builder) buildSubQuery() (string, error) {
+func (builder *Builder) buildSubQuery() string {
 	if builder.selects != nil {
 		selectQuery := strings.Join(builder.selects, ",")
 		builder.query = fmt.Sprintf("SELECT %s", selectQuery)
@@ -183,7 +180,7 @@ func (builder *Builder) buildSubQuery() (string, error) {
 
 	builder.buildCondition()
 
-	return builder.query, nil
+	return builder.query
 }
 
 func (builder *Builder) buildInsertModelQuery() (string, error) {

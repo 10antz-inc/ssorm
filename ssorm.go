@@ -4,7 +4,6 @@ import (
 	"cloud.google.com/go/spanner"
 	"context"
 	"errors"
-	"fmt"
 	"github.com/10antz-inc/ssorm/utils"
 	"google.golang.org/api/iterator"
 	"os"
@@ -145,9 +144,9 @@ func (db *DB) First(ctx context.Context, spannerTransaction interface{}) error {
 	db.builder.limit = 1
 	var query string
 	if db.builder.subBuilder.subModels != nil {
-		query, _ = db.builder.buildSubQuery()
+		query = db.builder.buildSubQuery()
 	} else {
-		query, _ = db.builder.selectQuery()
+		query = db.builder.selectQuery()
 	}
 
 	err = SimpleQueryRead(ctx, spannerTransaction, query, db.builder.params, db.builder.model)
@@ -163,7 +162,7 @@ func (db *DB) Count(ctx context.Context, spannerTransaction interface{}, cnt int
 	if db.builder.tableName == "" {
 		return errors.New("Undefined table name. please set ssorm.Model(&struct{})")
 	}
-	query, err := db.Select([]string{"COUNT(1) AS CNT"}).builder.selectQuery()
+	query := db.Select([]string{"COUNT(1) AS CNT"}).builder.selectQuery()
 
 	stmt := spanner.Statement{SQL: query, Params: db.builder.params}
 
@@ -186,7 +185,10 @@ func (db *DB) Count(ctx context.Context, spannerTransaction interface{}, cnt int
 			}
 			return err
 		}
-		row.ColumnByName("CNT", cnt)
+		if err := row.ColumnByName("CNT", cnt); err != nil {
+			getLogger().Errorf("Error: %s", err)
+			return err
+		}
 		break
 	}
 
@@ -201,9 +203,9 @@ func (db *DB) Find(ctx context.Context, spannerTransaction interface{}) error {
 
 	var query string
 	if db.builder.subBuilder.subModels != nil {
-		query, _ = db.builder.buildSubQuery()
+		query = db.builder.buildSubQuery()
 	} else {
-		query, _ = db.builder.selectQuery()
+		query = db.builder.selectQuery()
 	}
 
 	err = SimpleQueryRead(ctx, spannerTransaction, query, db.builder.params, db.builder.model)
@@ -302,7 +304,8 @@ func SimpleQueryRead(ctx context.Context, spannerTransaction interface{}, query 
 			results := reflect.Indirect(reflect.ValueOf(result))
 			elem := reflect.New(resultType).Interface()
 			if err := row.ToStruct(elem); err != nil {
-				return fmt.Errorf("failed to struct: %w", err)
+				getLogger().Errorf("Failed to struct: %w", err)
+				return err
 			}
 
 			if isPtr {
@@ -315,14 +318,15 @@ func SimpleQueryRead(ctx context.Context, spannerTransaction interface{}, query 
 		for {
 			if row, err = iter.Next(); err != nil {
 				if err == iterator.Done {
-					fmt.Printf("Result: %+v", result)
+					getLogger().Debugf("Result: %+v", result)
 					return nil
 				}
 				return err
 			}
 
 			if err := row.ToStruct(result); err != nil {
-				return fmt.Errorf("failed to struct: %w", err)
+				getLogger().Errorf("Failed to struct: %w", err)
+				return err
 			}
 			break
 		}
