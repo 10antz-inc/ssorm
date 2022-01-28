@@ -148,6 +148,7 @@ func (builder *Builder) buildSelectQuery() {
 	if builder.selects != nil {
 		selectQuery := strings.Join(builder.selects, ",")
 		builder.query = fmt.Sprintf("SELECT %s FROM %s", selectQuery, builder.tableName)
+		return
 	}
 	builder.query = fmt.Sprintf("SELECT * FROM %s", builder.tableName)
 }
