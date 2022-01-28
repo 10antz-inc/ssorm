@@ -148,17 +148,18 @@ func (builder *Builder) buildSelectQuery() {
 	if builder.selects != nil {
 		selectQuery := strings.Join(builder.selects, ",")
 		builder.query = fmt.Sprintf("SELECT %s FROM %s", selectQuery, builder.tableName)
-		return
+	} else {
+		builder.query = fmt.Sprintf("SELECT * FROM %s", builder.tableName)
 	}
-	builder.query = fmt.Sprintf("SELECT * FROM %s", builder.tableName)
 }
 
 func (builder *Builder) buildSubQuery() string {
 	if builder.selects != nil {
 		selectQuery := strings.Join(builder.selects, ",")
 		builder.query = fmt.Sprintf("SELECT %s", selectQuery)
+	} else {
+		builder.query = "SELECT *"
 	}
-	builder.query = "SELECT *"
 
 	var subQueries []string
 	index := 0
