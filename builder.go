@@ -254,6 +254,9 @@ func (builder *Builder) buildUpdateModelQuery() (string, error) {
 		}
 
 		if utils.IsNullable(varValue) && !utils.IsValid(varValue) {
+			if tag.Get(utils.SSORM_TAG_KEY) == utils.SSORM_TAG_NULLABLE_WRITE {
+				updateData = append(updateData, fmt.Sprintf("%s=null", varName))
+			}
 			continue
 		}
 		format := "%s=%v"
