@@ -16,6 +16,7 @@ type config struct {
 	tracer trace.Tracer
 
 	attrs []attribute.KeyValue
+	enableQueryStatement bool
 }
 
 type Option interface {
@@ -36,6 +37,7 @@ func newConfig(opts ...Option) *config {
 		attrs: []attribute.KeyValue{
 			semconv.DBSystemKey.String("spanner"),
 		},
+		enableQueryStatement: false,
 	}
 	for _, opt := range opts {
 		opt.apply(conf)
@@ -50,7 +52,7 @@ func WithAttributes(attrs ...attribute.KeyValue) Option {
 }
 
 func WithConnectName(name string) Option {
-	return option(func(conf * config) {
+	return option(func(conf *config) {
 		semconv.DBConnectionStringKey.String(name)
 	})
 }
@@ -58,5 +60,11 @@ func WithConnectName(name string) Option {
 func WithTracerProvider(provider trace.TracerProvider) Option {
 	return option(func(conf *config) {
 		conf.tp = provider
+	})
+}
+
+func WithQueryStatement() Option {
+	return option(func(conf *config) {
+		conf.enableQueryStatement = true
 	})
 }
