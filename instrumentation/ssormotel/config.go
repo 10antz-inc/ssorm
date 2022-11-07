@@ -17,6 +17,7 @@ type config struct {
 
 	attrs []attribute.KeyValue
 	enableQueryStatement bool
+	statement string
 }
 
 type Option interface {
@@ -48,12 +49,6 @@ func newConfig(opts ...Option) *config {
 func WithAttributes(attrs ...attribute.KeyValue) Option {
 	return option(func(conf *config) {
 		conf.attrs = append(conf.attrs, attrs...)
-	})
-}
-
-func WithConnectName(name string) Option {
-	return option(func(conf *config) {
-		semconv.DBConnectionStringKey.String(name)
 	})
 }
 

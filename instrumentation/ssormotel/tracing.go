@@ -5,8 +5,8 @@ import (
 	"runtime"
 
 	"go.opentelemetry.io/otel/trace"
-	"go.opentelemetry.io/otel/attribute"
 	semconv "go.opentelemetry.io/otel/semconv/v1.10.0"
+	"go.opentelemetry.io/otel/codes"
 )
 
 type (
@@ -17,7 +17,8 @@ type (
 type Tracing interface {
 	StartForRead(context.Context, Read) error
 	StartForWrite(context.Context, Write) (int64, error)
-	AddStatementToSpanAttribute(string)
+	SetStatement(string)
+	UnsetStatement()
 }
 
 type tracing struct {
@@ -39,16 +40,35 @@ func NewTracing(opts ...Option) *tracing {
 	}
 }
 
+func (t *tracing) SetStatement(statement string) {
+	t.conf.statement = statement
+}
+
+func (t *tracing) UnsetStatement() {
+	t.conf.statement = ""
+}
+
 func (t *tracing) StartForRead(ctx context.Context, f Read) error {
 	if !trace.SpanFromContext(ctx).IsRecording() {
 		return f(ctx)
 	}
 
-	return func() error {
-		ctx, span := t.conf.tracer.Start(ctx, t.makeSpanName(), t.spanOpts...)
-		defer span.End()
-		return f(ctx)
+	spanOpts := t.spanOpts
+	if t.isEnableStatement() {
+		spanOpts = append(spanOpts, trace.WithAttributes(semconv.DBStatementKey.String(t.conf.statement)))
+	}
+
+	spanCtx, span := t.conf.tracer.Start(ctx, t.makeSpanName(), spanOpts...)
+	defer func() {
+		t.UnsetStatement()
+		span.End()
 	}()
+
+	if err := f(ctx); err != nil {
+		recordError(spanCtx, span, err)
+		return err
+	}
+	return nil
 }
 
 func (t *tracing) StartForWrite(ctx context.Context, f Write) (int64, error) {
@@ -56,23 +76,35 @@ func (t *tracing) StartForWrite(ctx context.Context, f Write) (int64, error) {
 		return f(ctx)
 	}
 
-	return func() (int64, error) {
-		ctx, span := t.conf.tracer.Start(ctx, t.makeSpanName(), t.spanOpts...)
-		defer span.End()
-		return f(ctx)
-	}()
-}
-
-func (t *tracing) AddStatementToSpanAttribute(statement string) {
-	if !t.conf.enableQueryStatement {
-		return
+	spanOpts := t.spanOpts
+	if t.isEnableStatement() {
+		spanOpts = append(spanOpts, trace.WithAttributes(semconv.DBStatementKey.String(t.conf.statement)))
 	}
 
-	v := semconv.DBStatementKey.String(statement)
-	t.spanOpts = append(t.spanOpts, trace.WithAttributes(attribute.KeyValue{Key: v.Key, Value: v.Value}))
+	ctx, span := t.conf.tracer.Start(ctx, t.makeSpanName(), spanOpts...)
+	defer func() {
+		t.UnsetStatement()
+		span.End()
+	}()
+
+	row, err := f(ctx)
+	if err != nil {
+		recordError(ctx, span, err)
+		return row, err
+	}
+	return row, nil
+}
+
+func (t *tracing) isEnableStatement() bool {
+	return t.conf.enableQueryStatement && t.conf.statement != ""
 }
 
 func (t *tracing) makeSpanName() string {
 	pc, _, _, _ := runtime.Caller(3)
 	return runtime.FuncForPC(pc).Name()
+}
+
+func recordError(ctx context.Context, span trace.Span, err error) {
+	span.RecordError(err)
+	span.SetStatus(codes.Error, err.Error())
 }

@@ -193,7 +193,7 @@ func SimpleQueryRead(ctx context.Context, spannerTransaction interface{}, query 
 	cmd := simpleQueryRead(ctx, spannerTransaction, query, params, result)
 	if tracing != nil {
 		statement := fmt.Sprintf("%s, params: %+v", query, params)
-		tracing.AddStatementToSpanAttribute(statement)
+		tracing.SetStatement(statement)
 		return tracing.StartForRead(ctx, cmd)
 	}
 
@@ -204,7 +204,7 @@ func SimpleQueryWrite(ctx context.Context, spannerTransaction *spanner.ReadWrite
 	cmd := simpleQueryWrite(ctx, spannerTransaction, query, params)
 	if tracing != nil {
 		statement := fmt.Sprintf("%s, params: %+v", query, params)
-		tracing.AddStatementToSpanAttribute(statement)
+		tracing.SetStatement(statement)
 		return tracing.StartForWrite(ctx, cmd)
 	}
 
