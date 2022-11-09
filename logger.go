@@ -3,6 +3,7 @@ package ssorm
 import (
 	"io"
 	"time"
+	"context"
 
 	"github.com/sirupsen/logrus"
 )
@@ -14,6 +15,7 @@ type ILogger interface {
 	Errorf(format string, args ...interface{})
 	Fatalf(format string, args ...interface{})
 	Panicf(format string, args ...interface{})
+	WithContext(ctx context.Context) *logrus.Entry
 }
 
 func NewLogger(out io.Writer) ILogger {

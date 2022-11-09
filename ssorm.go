@@ -261,7 +261,7 @@ func (db *DB) count(ctx context.Context, spannerTransaction interface{}, cnt int
 
 		stmt := spanner.Statement{SQL: query, Params: db.builder.params}
 
-		getLogger().Infof("Select Query: %s Param: %+v", stmt.SQL, db.builder.params)
+		getLogger().WithContext(ctx).Infof("Select Query: %s Param: %+v", stmt.SQL, db.builder.params)
 
 		rot, readOnly := spannerTransaction.(*spanner.ReadOnlyTransaction)
 		rwt, readWrite := spannerTransaction.(*spanner.ReadWriteTransaction)
@@ -281,7 +281,7 @@ func (db *DB) count(ctx context.Context, spannerTransaction interface{}, cnt int
 				return err
 			}
 			if err := row.ColumnByName("CNT", cnt); err != nil {
-				getLogger().Errorf("Error: %s", err)
+				getLogger().WithContext(ctx).Errorf("Error: %s", err)
 				return err
 			}
 			break
@@ -297,7 +297,7 @@ func (db *DB) insert(ctx context.Context, spannerTransaction *spanner.ReadWriteT
 		if err != nil {
 			return 0, err
 		}
-		getLogger().Infof("Insert Query: %s Param: %+v", db.builder.query, db.builder.params)
+		getLogger().WithContext(ctx).Infof("Insert Query: %s Param: %+v", db.builder.query, db.builder.params)
 		return SimpleQueryWrite(ctx, spannerTransaction, query, db.builder.params)
 	}
 }
@@ -308,7 +308,7 @@ func (db *DB) update(ctx context.Context, spannerTransaction *spanner.ReadWriteT
 		if err != nil {
 			return 0, err
 		}
-		getLogger().Infof("Update Query: %s Param: %+v", db.builder.query, db.builder.params)
+		getLogger().WithContext(ctx).Infof("Update Query: %s Param: %+v", db.builder.query, db.builder.params)
 		return SimpleQueryWrite(ctx, spannerTransaction, query, db.builder.params)
 	}
 }
@@ -319,7 +319,7 @@ func (db *DB) updateColumns(ctx context.Context, spannerTransaction *spanner.Rea
 		if err != nil {
 			return 0, err
 		}
-		getLogger().Infof("Update Query: %s Param: %+v", db.builder.query, db.builder.params)
+		getLogger().WithContext(ctx).Infof("Update Query: %s Param: %+v", db.builder.query, db.builder.params)
 		return SimpleQueryWrite(ctx, spannerTransaction, query, db.builder.params)
 	}
 }
@@ -330,7 +330,7 @@ func (db *DB) updateOmit(ctx context.Context, spannerTransaction *spanner.ReadWr
 		if err != nil {
 			return 0, err
 		}
-		getLogger().Infof("Update Query: %s Param: %+v", db.builder.query, db.builder.params)
+		getLogger().WithContext(ctx).Infof("Update Query: %s Param: %+v", db.builder.query, db.builder.params)
 		return SimpleQueryWrite(ctx, spannerTransaction, query, db.builder.params)
 	}
 }
@@ -341,7 +341,7 @@ func (db *DB) updateParams(ctx context.Context, spannerTransaction *spanner.Read
 		if err != nil {
 			return 0, err
 		}
-		getLogger().Infof("Update Query: %s Param: %+v", db.builder.query, db.builder.params)
+		getLogger().WithContext(ctx).Infof("Update Query: %s Param: %+v", db.builder.query, db.builder.params)
 		return SimpleQueryWrite(ctx, spannerTransaction, query, db.builder.params)
 	}
 }
@@ -360,7 +360,7 @@ func (db *DB) deleteModel(ctx context.Context, spannerTransaction *spanner.ReadW
 			}
 			rowCount, err := SimpleQueryWrite(ctx, spannerTransaction, query, db.builder.params)
 
-			getLogger().Infof("Update Query: %s Param: %+v", db.builder.query, db.builder.params)
+			getLogger().WithContext(ctx).Infof("Update Query: %s Param: %+v", db.builder.query, db.builder.params)
 			return rowCount, err
 		}
 
@@ -368,7 +368,7 @@ func (db *DB) deleteModel(ctx context.Context, spannerTransaction *spanner.ReadW
 		if err != nil {
 			return 0, err
 		}
-		getLogger().Infof("DELETE Query: %s Param: %+v", db.builder.query, db.builder.params)
+		getLogger().WithContext(ctx).Infof("DELETE Query: %s Param: %+v", db.builder.query, db.builder.params)
 		return SimpleQueryWrite(ctx, spannerTransaction, query, db.builder.params)
 	}
 }
@@ -384,7 +384,7 @@ func (db *DB) deleteWhere(ctx context.Context, spannerTransaction *spanner.ReadW
 			if err != nil {
 				return 0, err
 			}
-			getLogger().Infof("Update Query: %s Param: %+v", db.builder.query, db.builder.params)
+			getLogger().WithContext(ctx).Infof("Update Query: %s Param: %+v", db.builder.query, db.builder.params)
 			return SimpleQueryWrite(ctx, spannerTransaction, query, db.builder.params)
 		}
 
@@ -392,7 +392,7 @@ func (db *DB) deleteWhere(ctx context.Context, spannerTransaction *spanner.ReadW
 		if err != nil {
 			return 0, err
 		}
-		getLogger().Infof("DELETE Query: %s Param: %+v", db.builder.query, db.builder.params)
+		getLogger().WithContext(ctx).Infof("DELETE Query: %s Param: %+v", db.builder.query, db.builder.params)
 		return SimpleQueryWrite(ctx, spannerTransaction, query, db.builder.params)
 	}
 }
@@ -409,7 +409,7 @@ func simpleQueryRead(ctx context.Context, spannerTransaction interface{}, query 
 			isPtr bool
 		)
 		stmt := spanner.Statement{SQL: query, Params: params}
-		getLogger().Infof("Select Query: %s Param: %+v", stmt.SQL, params)
+		getLogger().WithContext(ctx).Infof("Select Query: %s Param: %+v", stmt.SQL, params)
 
 		rot, readOnly := spannerTransaction.(*spanner.ReadOnlyTransaction)
 		rwt, readWrite := spannerTransaction.(*spanner.ReadWriteTransaction)
@@ -443,7 +443,7 @@ func simpleQueryRead(ctx context.Context, spannerTransaction interface{}, query 
 				results := reflect.Indirect(reflect.ValueOf(result))
 				elem := reflect.New(resultType).Interface()
 				if err := row.ToStruct(elem); err != nil {
-					getLogger().Errorf("Failed to struct: %w", err)
+					getLogger().WithContext(ctx).Errorf("Failed to struct: %w", err)
 					return err
 				}
 
@@ -457,14 +457,14 @@ func simpleQueryRead(ctx context.Context, spannerTransaction interface{}, query 
 			for {
 				if row, err = iter.Next(); err != nil {
 					if err == iterator.Done {
-						getLogger().Debugf("Result: %+v", result)
+						getLogger().WithContext(ctx).Debugf("Result: %+v", result)
 						return nil
 					}
 					return err
 				}
 
 				if err := row.ToStruct(result); err != nil {
-					getLogger().Errorf("Failed to struct: %w", err)
+					getLogger().WithContext(ctx).Errorf("Failed to struct: %w", err)
 					return err
 				}
 				break
