@@ -30,10 +30,8 @@ func getLogger() ILogger {
 	return logger
 }
 
-func Logger(l ILogger) Option {
-	return func(d *DB) {
-		logger = l
-	}
+func Logger(l ILogger) {
+	logger = l
 }
 
 type DB struct {
