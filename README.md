@@ -66,7 +66,41 @@ Warnf(format string, args ...interface{})
 Errorf(format string, args ...interface{})
 Fatalf(format string, args ...interface{})
 Panicf(format string, args ...interface{})
+WithContext(ctx context.Context) *logrus.Entry
 }
+```
+
+Tracing
+=========
+
+```go
+ssorm.UseTracing()
+```
+
+Additional Tracing Option
+=========
+```go
+import (
+  "go.opentelemetry.io/otel/trace"
+
+  "github.com/10antz-inc/ssorm"
+  "github.com/10antz-inc/ssorm/ssormotel"
+)
+
+func main() {
+  ssorm.UseTrace(
+    // add attribute 'db.statement'
+    ssormotel.WithQueryStatement(),
+    // set the created TraceProvider.
+    ssormotel.WithTraceProvider(provider trace.TraceProvider),
+    // add any attribute
+    ssormotel.WithAttributes(
+      semconv.DBConnectionStringKey.String("projects/.../instances/.../databases/..."),
+      semconv.DBSystemKey.String("Google Cloud Spanner"),
+    )
+  )
+}
+
 ```
 
 ## License
