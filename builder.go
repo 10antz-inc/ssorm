@@ -186,10 +186,14 @@ func (builder *Builder) buildSubQuery() string {
 }
 
 func (builder *Builder) buildInsertModelQuery() (string, error) {
+	var (
+		values []string
+		cols   []string
+		ret    []interface{}
+	)
+
 	builder.query = fmt.Sprintf("INSERT INTO  %s", builder.tableName)
-	var values []string
-	var cols []string
-	var ret []interface{}
+
 	s := reflect.Indirect(reflect.ValueOf(builder.model))
 	if s.Kind() != reflect.Slice {
 		ret = make([]interface{}, 1)
