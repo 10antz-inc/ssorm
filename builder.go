@@ -187,52 +187,71 @@ func (builder *Builder) buildSubQuery() string {
 
 func (builder *Builder) buildInsertModelQuery() (string, error) {
 	builder.query = fmt.Sprintf("INSERT INTO  %s", builder.tableName)
-	e := reflect.Indirect(reflect.ValueOf(builder.model))
-	var (
-		cols []string
-		vals []string
-	)
-	for i := 0; i < e.NumField(); i++ {
-		addColumn := true
-		//isSlice := false
-		isSpannerValue := false
-		tag, varName, varValue, _ := utils.ReflectValues(e, i)
-
-		if tag.Get(utils.SSORM_TAG_KEY) == utils.SSORM_TAG_IGNORE_WRITE {
-			continue
+	var values []string
+	var cols []string
+	var ret []interface{}
+	s := reflect.Indirect(reflect.ValueOf(builder.model))
+	if s.Kind() != reflect.Slice {
+		ret = make([]interface{}, 1)
+		ret[0] = s.Interface()
+	} else {
+		ret = make([]interface{}, s.Len())
+		for i := 0; i < s.Len(); i++ {
+			ret[i] = s.Index(i).Interface()
 		}
-
-		if utils.IsNullable(varValue) && !utils.IsValid(varValue) {
-			addColumn = false
-		}
-
-		switch tag.Get(utils.SSORM_TAG_KEY) {
-		case utils.SSORM_TAG_CREATE_TIME:
-			isSpannerValue = true
-			varValue = "CURRENT_TIMESTAMP()"
-			break
-		case utils.SSORM_TAG_UPDATE_TIME:
-			isSpannerValue = true
-			varValue = "CURRENT_TIMESTAMP()"
-			break
-		case utils.SSORM_TAG_DELETE_TIME:
-			addColumn = false
-			break
-		}
-
-		if addColumn {
-			if !isSpannerValue {
-				vals = append(vals, fmt.Sprintf("@%s", varName))
-				builder.params[varName] = varValue
-
-			} else {
-				vals = append(vals, fmt.Sprintf("%s", varValue))
-			}
-			cols = append(cols, fmt.Sprintf("%s", varName))
-		}
-
 	}
-	builder.query = fmt.Sprintf("%s (%s) VALUES (%s)", builder.query, strings.Join(cols, ", "), strings.Join(vals, ", "))
+
+	for j := 0; j < len(ret); j++ {
+		var (
+			vals []string
+		)
+		e := reflect.Indirect(reflect.ValueOf(ret[j]))
+		for i := 0; i < e.NumField(); i++ {
+			addColumn := true
+			isSpannerValue := false
+			tag, varName, varValue, _ := utils.ReflectValues(e, i)
+
+			if tag.Get(utils.SSORM_TAG_KEY) == utils.SSORM_TAG_IGNORE_WRITE {
+				continue
+			}
+
+			if utils.IsNullable(varValue) && !utils.IsValid(varValue) {
+				addColumn = false
+			}
+
+			switch tag.Get(utils.SSORM_TAG_KEY) {
+			case utils.SSORM_TAG_CREATE_TIME:
+				isSpannerValue = true
+				varValue = "CURRENT_TIMESTAMP()"
+				break
+			case utils.SSORM_TAG_UPDATE_TIME:
+				isSpannerValue = true
+				varValue = "CURRENT_TIMESTAMP()"
+				break
+			case utils.SSORM_TAG_DELETE_TIME:
+				addColumn = false
+				break
+			}
+
+			if addColumn {
+				if !isSpannerValue {
+					vals = append(vals, fmt.Sprintf("@%s_%d", varName, j))
+					builder.params[fmt.Sprintf("%s_%d", varName, j)] = varValue
+
+				} else {
+					vals = append(vals, fmt.Sprintf("%s", varValue))
+				}
+				if j == 0 {
+					cols = append(cols, fmt.Sprintf("%s", varName))
+				}
+			}
+
+		}
+
+		values = append(values, fmt.Sprintf("(%s)", strings.Join(vals, ", ")))
+	}
+
+	builder.query = fmt.Sprintf("%s (%s) VALUES %s", builder.query, strings.Join(cols, ", "), strings.Join(values, ", "))
 	return builder.query, nil
 }
 
