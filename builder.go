@@ -219,7 +219,7 @@ func (builder *Builder) buildInsertModelQuery() (string, error) {
 				continue
 			}
 
-			if utils.IsNullable(varValue) && !utils.IsValid(varValue) {
+			if utils.IsNullable(varValue) && !utils.IsValid(varValue) && tag.Get(utils.SSORM_TAG_KEY) != utils.SSORM_TAG_NULLABLE_WRITE {
 				addColumn = false
 			}
 
