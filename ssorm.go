@@ -11,6 +11,8 @@ import (
 	"google.golang.org/api/iterator"
 	"os"
 	"reflect"
+
+	"github.com/rs/zerolog/log"
 )
 
 var tracing ssormotel.Tracing
@@ -20,19 +22,6 @@ func UseTrace(opts ...ssormotel.Option) {
 }
 
 type Option func(*DB)
-
-var logger ILogger
-
-func getLogger() ILogger {
-	if logger == nil {
-		logger = NewLogger(os.Stdout)
-	}
-	return logger
-}
-
-func Logger(l ILogger) {
-	logger = l
-}
 
 type DB struct {
 	builder *Builder
@@ -259,7 +248,7 @@ func (db *DB) count(ctx context.Context, spannerTransaction interface{}, cnt int
 
 		stmt := spanner.Statement{SQL: query, Params: db.builder.params}
 
-		getLogger().WithContext(ctx).Infof("Select Query: %s Param: %+v", stmt.SQL, db.builder.params)
+		log.Ctx(ctx).Info().Msgf("Select Query: %s Param: %+v", stmt.SQL, db.builder.params)
 
 		rot, readOnly := spannerTransaction.(*spanner.ReadOnlyTransaction)
 		rwt, readWrite := spannerTransaction.(*spanner.ReadWriteTransaction)
@@ -279,7 +268,7 @@ func (db *DB) count(ctx context.Context, spannerTransaction interface{}, cnt int
 				return err
 			}
 			if err := row.ColumnByName("CNT", cnt); err != nil {
-				getLogger().WithContext(ctx).Errorf("Error: %s", err)
+				log.Ctx(ctx).Info().Error().Interface("error: %+v", err).Msgf("Error: %s", err)
 				return err
 			}
 			break
@@ -295,7 +284,7 @@ func (db *DB) insert(ctx context.Context, spannerTransaction *spanner.ReadWriteT
 		if err != nil {
 			return 0, err
 		}
-		getLogger().WithContext(ctx).Infof("Insert Query: %s Param: %+v", db.builder.query, db.builder.params)
+		log.Ctx(ctx).Info().Msgf("Insert Query: %s Param: %+v", db.builder.query, db.builder.params)
 		return SimpleQueryWrite(ctx, spannerTransaction, query, db.builder.params)
 	}
 }
@@ -306,7 +295,7 @@ func (db *DB) update(ctx context.Context, spannerTransaction *spanner.ReadWriteT
 		if err != nil {
 			return 0, err
 		}
-		getLogger().WithContext(ctx).Infof("Update Query: %s Param: %+v", db.builder.query, db.builder.params)
+		log.Ctx(ctx).Info().Msgf("Update Query: %s Param: %+v", db.builder.query, db.builder.params)
 		return SimpleQueryWrite(ctx, spannerTransaction, query, db.builder.params)
 	}
 }
@@ -317,7 +306,7 @@ func (db *DB) updateColumns(ctx context.Context, spannerTransaction *spanner.Rea
 		if err != nil {
 			return 0, err
 		}
-		getLogger().WithContext(ctx).Infof("Update Query: %s Param: %+v", db.builder.query, db.builder.params)
+		log.Ctx(ctx).Info().Msgf("Update Query: %s Param: %+v", db.builder.query, db.builder.params)
 		return SimpleQueryWrite(ctx, spannerTransaction, query, db.builder.params)
 	}
 }
@@ -328,7 +317,7 @@ func (db *DB) updateOmit(ctx context.Context, spannerTransaction *spanner.ReadWr
 		if err != nil {
 			return 0, err
 		}
-		getLogger().WithContext(ctx).Infof("Update Query: %s Param: %+v", db.builder.query, db.builder.params)
+		log.Ctx(ctx).Info().Msgf("Update Query: %s Param: %+v", db.builder.query, db.builder.params)
 		return SimpleQueryWrite(ctx, spannerTransaction, query, db.builder.params)
 	}
 }
@@ -339,7 +328,7 @@ func (db *DB) updateParams(ctx context.Context, spannerTransaction *spanner.Read
 		if err != nil {
 			return 0, err
 		}
-		getLogger().WithContext(ctx).Infof("Update Query: %s Param: %+v", db.builder.query, db.builder.params)
+		log.Ctx(ctx).Info().Msgf("Update Query: %s Param: %+v", db.builder.query, db.builder.params)
 		return SimpleQueryWrite(ctx, spannerTransaction, query, db.builder.params)
 	}
 }
@@ -358,7 +347,7 @@ func (db *DB) deleteModel(ctx context.Context, spannerTransaction *spanner.ReadW
 			}
 			rowCount, err := SimpleQueryWrite(ctx, spannerTransaction, query, db.builder.params)
 
-			getLogger().WithContext(ctx).Infof("Update Query: %s Param: %+v", db.builder.query, db.builder.params)
+			log.Ctx(ctx).Info().Msgf("Update Query: %s Param: %+v", db.builder.query, db.builder.params)
 			return rowCount, err
 		}
 
@@ -366,7 +355,7 @@ func (db *DB) deleteModel(ctx context.Context, spannerTransaction *spanner.ReadW
 		if err != nil {
 			return 0, err
 		}
-		getLogger().WithContext(ctx).Infof("DELETE Query: %s Param: %+v", db.builder.query, db.builder.params)
+		log.Ctx(ctx).Info().Msgf("DELETE Query: %s Param: %+v", db.builder.query, db.builder.params)
 		return SimpleQueryWrite(ctx, spannerTransaction, query, db.builder.params)
 	}
 }
@@ -382,7 +371,7 @@ func (db *DB) deleteWhere(ctx context.Context, spannerTransaction *spanner.ReadW
 			if err != nil {
 				return 0, err
 			}
-			getLogger().WithContext(ctx).Infof("Update Query: %s Param: %+v", db.builder.query, db.builder.params)
+			log.Ctx(ctx).Info().Msgf("Update Query: %s Param: %+v", db.builder.query, db.builder.params)
 			return SimpleQueryWrite(ctx, spannerTransaction, query, db.builder.params)
 		}
 
@@ -390,7 +379,7 @@ func (db *DB) deleteWhere(ctx context.Context, spannerTransaction *spanner.ReadW
 		if err != nil {
 			return 0, err
 		}
-		getLogger().WithContext(ctx).Infof("DELETE Query: %s Param: %+v", db.builder.query, db.builder.params)
+		log.Ctx(ctx).Info().Msgf("DELETE Query: %s Param: %+v", db.builder.query, db.builder.params)
 		return SimpleQueryWrite(ctx, spannerTransaction, query, db.builder.params)
 	}
 }
@@ -407,7 +396,7 @@ func simpleQueryRead(ctx context.Context, spannerTransaction interface{}, query 
 			isPtr bool
 		)
 		stmt := spanner.Statement{SQL: query, Params: params}
-		getLogger().WithContext(ctx).Infof("Select Query: %s Param: %+v", stmt.SQL, params)
+		log.Ctx(ctx).Info().Msgf("Select Query: %s Param: %+v", stmt.SQL, params)
 
 		rot, readOnly := spannerTransaction.(*spanner.ReadOnlyTransaction)
 		rwt, readWrite := spannerTransaction.(*spanner.ReadWriteTransaction)
@@ -441,7 +430,7 @@ func simpleQueryRead(ctx context.Context, spannerTransaction interface{}, query 
 				results := reflect.Indirect(reflect.ValueOf(result))
 				elem := reflect.New(resultType).Interface()
 				if err := row.ToStruct(elem); err != nil {
-					getLogger().WithContext(ctx).Errorf("Failed to struct: %w", err)
+					log.Ctx(ctx).Error().Interface("error: %+v", err).Msgf("Failed to struct: %s", err)
 					return err
 				}
 
@@ -455,14 +444,14 @@ func simpleQueryRead(ctx context.Context, spannerTransaction interface{}, query 
 			for {
 				if row, err = iter.Next(); err != nil {
 					if err == iterator.Done {
-						getLogger().WithContext(ctx).Debugf("Result: %+v", result)
+						log.Ctx(ctx).Debug().Msgf("Result: %+v", result)
 						return nil
 					}
 					return err
 				}
 
 				if err := row.ToStruct(result); err != nil {
-					getLogger().WithContext(ctx).Errorf("Failed to struct: %w", err)
+					log.Ctx(ctx).Error().Interface("error: %+v", err).Msgf("Failed to struct: %s", err)
 					return err
 				}
 				break
