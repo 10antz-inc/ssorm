@@ -9,7 +9,6 @@ import (
 	"errors"
 	"github.com/10antz-inc/ssorm/utils"
 	"google.golang.org/api/iterator"
-	"os"
 	"reflect"
 
 	"github.com/rs/zerolog/log"
@@ -268,7 +267,7 @@ func (db *DB) count(ctx context.Context, spannerTransaction interface{}, cnt int
 				return err
 			}
 			if err := row.ColumnByName("CNT", cnt); err != nil {
-				log.Ctx(ctx).Info().Error().Interface("error: %+v", err).Msgf("Error: %s", err)
+				log.Ctx(ctx).Error().Interface("error: %+v", err).Msgf("Error: %s", err)
 				return err
 			}
 			break
