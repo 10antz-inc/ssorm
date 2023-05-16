@@ -507,6 +507,9 @@ func (builder *Builder) buildSoftDeleteModelQuery() (string, error) {
 	}
 	builder.query = fmt.Sprintf("%s %s", builder.query, strings.Join(updateData, ","))
 	builder.query = fmt.Sprintf("%s WHERE %s ", builder.query, strings.Join(conditions, " AND "))
+	if builder.refresh {
+		builder.query += " THEN RETURN *"
+	}
 	return builder.query, nil
 }
 
@@ -540,6 +543,9 @@ func (builder *Builder) buildSoftDeleteWhereQuery() (string, error) {
 	condition := builder.buildWhereCondition(builder.whereConditions, "")
 	if condition != "" {
 		builder.query = fmt.Sprintf("%s WHERE %s", builder.query, condition)
+	}
+	if builder.refresh {
+		builder.query += " THEN RETURN *"
 	}
 	return builder.query, nil
 }
