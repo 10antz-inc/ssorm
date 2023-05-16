@@ -7,7 +7,7 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/10antz-inc/ssorm/utils"
+	"github.com/10antz-inc/ssorm/v2/utils"
 )
 
 type Builder struct {
@@ -20,6 +20,7 @@ type Builder struct {
 	tableName       string
 	model           interface{}
 	subBuilder      *SubBuilder
+	refresh         bool
 	softDelete      bool
 	softDeleteQuery string
 	params          map[string]interface{}
@@ -256,6 +257,9 @@ func (builder *Builder) buildInsertModelQuery() (string, error) {
 	}
 
 	builder.query = fmt.Sprintf("%s (%s) VALUES %s", builder.query, strings.Join(cols, ", "), strings.Join(values, ", "))
+	if builder.refresh {
+		builder.query += " THEN RETURN *"
+	}
 	return builder.query, nil
 }
 
@@ -324,7 +328,9 @@ func (builder *Builder) buildUpdateModelQuery() (string, error) {
 	if len(conditions) == 0 {
 		return "", errors.New("no primary key set")
 	}
-
+	if builder.refresh {
+		builder.query += " THEN RETURN *"
+	}
 	return builder.query, nil
 }
 
@@ -386,6 +392,9 @@ func (builder *Builder) buildUpdateColumnQuery(in []string, isOmit bool) (string
 	if len(conditions) == 0 {
 		return "", errors.New("no primary key set")
 	}
+	if builder.refresh {
+		builder.query += " THEN RETURN *"
+	}
 	return builder.query, nil
 }
 func (builder *Builder) buildUpdateParamsQuery(in map[string]interface{}) (string, error) {
@@ -425,7 +434,9 @@ func (builder *Builder) buildUpdateParamsQuery(in map[string]interface{}) (strin
 	if condition != "" {
 		builder.query = fmt.Sprintf("%s WHERE %s", builder.query, condition)
 	}
-
+	if builder.refresh {
+		builder.query += " THEN RETURN *"
+	}
 	return builder.query, nil
 }
 
