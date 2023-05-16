@@ -17,6 +17,7 @@ Overview
     * SoftDelete (Insert Update Find First Count Delete SubQuery)
     * SimpleQueryRead
     * SimpleQueryWrite
+    * ToRefresh(reflect spanner values (include the generated column) when insert, update, softdelete)
 
 * Supported data type
     * STRING
