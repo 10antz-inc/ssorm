@@ -49,28 +49,6 @@ Test
     go test -v ./tests/...
     ```
 
-Custom Logger
-=========
-
-```go
-ssorm.Logger({custom logger})
-```
-
-Logger Interface
-=========
-
-```go
-type ILogger interface {
-Debugf(format string, args ...interface{})
-Infof(format string, args ...interface{})
-Warnf(format string, args ...interface{})
-Errorf(format string, args ...interface{})
-Fatalf(format string, args ...interface{})
-Panicf(format string, args ...interface{})
-WithContext(ctx context.Context) *logrus.Entry
-}
-```
-
 Tracing
 =========
 

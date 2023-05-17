@@ -191,10 +191,10 @@ func SimpleQueryRead(ctx context.Context, spannerTransaction interface{}, query 
 	return cmd(ctx)
 }
 
-func SimpleQueryWrite(ctx context.Context, spannerTransaction *spanner.ReadWriteTransaction, query string, builder *Builder) (int64, error) {
-	cmd := simpleQueryWrite(ctx, spannerTransaction, query, builder)
+func SimpleQueryWrite(ctx context.Context, spannerTransaction *spanner.ReadWriteTransaction, query string, params map[string]interface{}) (int64, error) {
+	cmd := simpleQueryWrite(ctx, spannerTransaction, query, params)
 	if tracing != nil {
-		statement := fmt.Sprintf("%s, params: %+v", query, builder.params)
+		statement := fmt.Sprintf("%s, params: %+v", query, params)
 		tracing.SetStatement(statement)
 		return tracing.StartForWrite(ctx, cmd)
 	}
@@ -289,7 +289,7 @@ func (db *DB) insert(ctx context.Context, spannerTransaction *spanner.ReadWriteT
 			return 0, err
 		}
 		log.Ctx(ctx).Info().Msgf("Insert Query: %s Param: %+v", db.builder.query, db.builder.params)
-		return SimpleQueryWrite(ctx, spannerTransaction, query, db.builder)
+		return execQueryWriter(ctx, spannerTransaction, query, db.builder)
 	}
 }
 
@@ -300,7 +300,7 @@ func (db *DB) update(ctx context.Context, spannerTransaction *spanner.ReadWriteT
 			return 0, err
 		}
 		log.Ctx(ctx).Info().Msgf("Update Query: %s Param: %+v", db.builder.query, db.builder.params)
-		return SimpleQueryWrite(ctx, spannerTransaction, query, db.builder)
+		return execQueryWriter(ctx, spannerTransaction, query, db.builder)
 	}
 }
 
@@ -311,7 +311,7 @@ func (db *DB) updateColumns(ctx context.Context, spannerTransaction *spanner.Rea
 			return 0, err
 		}
 		log.Ctx(ctx).Info().Msgf("Update Query: %s Param: %+v", db.builder.query, db.builder.params)
-		return SimpleQueryWrite(ctx, spannerTransaction, query, db.builder)
+		return execQueryWriter(ctx, spannerTransaction, query, db.builder)
 	}
 }
 
@@ -322,7 +322,7 @@ func (db *DB) updateOmit(ctx context.Context, spannerTransaction *spanner.ReadWr
 			return 0, err
 		}
 		log.Ctx(ctx).Info().Msgf("Update Query: %s Param: %+v", db.builder.query, db.builder.params)
-		return SimpleQueryWrite(ctx, spannerTransaction, query, db.builder)
+		return execQueryWriter(ctx, spannerTransaction, query, db.builder)
 	}
 }
 
@@ -333,7 +333,7 @@ func (db *DB) updateParams(ctx context.Context, spannerTransaction *spanner.Read
 			return 0, err
 		}
 		log.Ctx(ctx).Info().Msgf("Update Query: %s Param: %+v", db.builder.query, db.builder.params)
-		return SimpleQueryWrite(ctx, spannerTransaction, query, db.builder)
+		return execQueryWriter(ctx, spannerTransaction, query, db.builder)
 	}
 }
 
@@ -349,7 +349,7 @@ func (db *DB) deleteModel(ctx context.Context, spannerTransaction *spanner.ReadW
 			if err != nil {
 				return 0, errors.New("no primary key set")
 			}
-			rowCount, err := SimpleQueryWrite(ctx, spannerTransaction, query, db.builder)
+			rowCount, err := execQueryWriter(ctx, spannerTransaction, query, db.builder)
 
 			log.Ctx(ctx).Info().Msgf("Update Query: %s Param: %+v", db.builder.query, db.builder.params)
 			return rowCount, err
@@ -360,7 +360,7 @@ func (db *DB) deleteModel(ctx context.Context, spannerTransaction *spanner.ReadW
 			return 0, err
 		}
 		log.Ctx(ctx).Info().Msgf("DELETE Query: %s Param: %+v", db.builder.query, db.builder.params)
-		return SimpleQueryWrite(ctx, spannerTransaction, query, db.builder)
+		return execQueryWriter(ctx, spannerTransaction, query, db.builder)
 	}
 }
 
@@ -376,7 +376,7 @@ func (db *DB) deleteWhere(ctx context.Context, spannerTransaction *spanner.ReadW
 				return 0, err
 			}
 			log.Ctx(ctx).Info().Msgf("Update Query: %s Param: %+v", db.builder.query, db.builder.params)
-			return SimpleQueryWrite(ctx, spannerTransaction, query, db.builder)
+			return execQueryWriter(ctx, spannerTransaction, query, db.builder)
 		}
 
 		query, err = db.builder.buildDeleteWhereQuery()
@@ -384,7 +384,7 @@ func (db *DB) deleteWhere(ctx context.Context, spannerTransaction *spanner.ReadW
 			return 0, err
 		}
 		log.Ctx(ctx).Info().Msgf("DELETE Query: %s Param: %+v", db.builder.query, db.builder.params)
-		return SimpleQueryWrite(ctx, spannerTransaction, query, db.builder)
+		return execQueryWriter(ctx, spannerTransaction, query, db.builder)
 	}
 }
 
@@ -470,26 +470,42 @@ func reflectValues(ctx context.Context, result interface{}, row *spanner.Row, it
 	return err
 }
 
-func simpleQueryWrite(ctx context.Context, spannerTransaction *spanner.ReadWriteTransaction, query string, builder *Builder) func(context.Context) (int64, error) {
+func execQueryWriter(ctx context.Context, spannerTransaction *spanner.ReadWriteTransaction, query string, builder *Builder) (int64, error) {
+	var cmd ssormotel.Write
+
+	switch {
+	case builder.refresh:
+		cmd = simpleQueryWriteForRefresh(ctx, spannerTransaction, query, builder)
+	default:
+		cmd = simpleQueryWrite(ctx, spannerTransaction, query, builder.params)
+	}
+
+	if tracing != nil {
+		statement := fmt.Sprintf("%s, params: %+v", query, builder.params)
+		tracing.SetStatement(statement)
+		return tracing.StartForWrite(ctx, cmd)
+	}
+
+	return cmd(ctx)
+}
+
+func simpleQueryWrite(ctx context.Context, spannerTransaction *spanner.ReadWriteTransaction, query string, params map[string]interface{}) func(context.Context) (int64, error) {
+	return func(ctx context.Context) (int64, error) {
+		return spannerTransaction.Update(ctx, spanner.Statement{SQL: query, Params: params})
+	}
+}
+
+func simpleQueryWriteForRefresh(ctx context.Context, spannerTransaction *spanner.ReadWriteTransaction, query string, builder *Builder) func(context.Context) (int64, error) {
 	var (
 		iter *spanner.RowIterator
 		row  *spanner.Row
+		err  error
 	)
 
 	return func(ctx context.Context) (int64, error) {
-		var (
-			err error
-		)
-		if builder.refresh {
-			stmt := spanner.Statement{SQL: query, Params: builder.params}
-			iter = spannerTransaction.Query(ctx, stmt)
-			defer iter.Stop()
-			err = reflectValues(ctx, builder.model, row, iter)
-			return iter.RowCount, err
-		}
-		stmt := spanner.Statement{SQL: query, Params: builder.params}
-		rowCount, err := spannerTransaction.Update(ctx, stmt)
-		return rowCount, err
-
+		iter = spannerTransaction.Query(ctx, spanner.Statement{SQL: query, Params: builder.params})
+		defer iter.Stop()
+		err = reflectValues(ctx, builder.model, row, iter)
+		return iter.RowCount, err
 	}
 }
