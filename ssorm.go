@@ -2,14 +2,16 @@ package ssorm
 
 import (
 	"fmt"
+
 	"github.com/10antz-inc/ssorm/v2/instrumentation/ssormotel"
 
-	"cloud.google.com/go/spanner"
 	"context"
 	"errors"
+	"reflect"
+
+	"cloud.google.com/go/spanner"
 	"github.com/10antz-inc/ssorm/v2/utils"
 	"google.golang.org/api/iterator"
-	"reflect"
 
 	"github.com/rs/zerolog/log"
 )
@@ -47,6 +49,11 @@ func SoftDeleteModel(model interface{}, opts ...Option) *DB {
 		softDelete: true,
 		params:     make(map[string]interface{}),
 	}
+	return db
+}
+
+func (db *DB) QueryOptions(opt *spanner.QueryOptions) *DB {
+	db.builder.queryOptions = opt
 	return db
 }
 
@@ -181,7 +188,11 @@ func (db *DB) DeleteWhere(ctx context.Context, spannerTransaction *spanner.ReadW
 }
 
 func SimpleQueryRead(ctx context.Context, spannerTransaction interface{}, query string, params map[string]interface{}, result interface{}) error {
-	cmd := simpleQueryRead(ctx, spannerTransaction, query, params, result)
+	return SimpleQueryReadWithOptions(ctx, spannerTransaction, query, params, result, nil)
+}
+
+func SimpleQueryReadWithOptions(ctx context.Context, spannerTransaction interface{}, query string, params map[string]interface{}, result interface{}, queryOpts *spanner.QueryOptions) error {
+	cmd := simpleQueryRead(ctx, spannerTransaction, query, params, result, queryOpts)
 	if tracing != nil {
 		statement := fmt.Sprintf("%s, params: %+v", query, params)
 		tracing.SetStatement(statement)
@@ -192,7 +203,11 @@ func SimpleQueryRead(ctx context.Context, spannerTransaction interface{}, query 
 }
 
 func SimpleQueryWrite(ctx context.Context, spannerTransaction *spanner.ReadWriteTransaction, query string, params map[string]interface{}) (int64, error) {
-	cmd := simpleQueryWrite(ctx, spannerTransaction, query, params)
+	return SimpleQueryWriteWithOptions(ctx, spannerTransaction, query, params, nil)
+}
+
+func SimpleQueryWriteWithOptions(ctx context.Context, spannerTransaction *spanner.ReadWriteTransaction, query string, params map[string]interface{}, queryOpts *spanner.QueryOptions) (int64, error) {
+	cmd := simpleQueryWrite(ctx, spannerTransaction, query, params, queryOpts)
 	if tracing != nil {
 		statement := fmt.Sprintf("%s, params: %+v", query, params)
 		tracing.SetStatement(statement)
@@ -215,7 +230,7 @@ func (db *DB) find(ctx context.Context, spannerTransaction interface{}) func(con
 			query = db.builder.selectQuery()
 		}
 
-		err = SimpleQueryRead(ctx, spannerTransaction, query, db.builder.params, db.builder.model)
+		err = SimpleQueryReadWithOptions(ctx, spannerTransaction, query, db.builder.params, db.builder.model, db.builder.queryOptions)
 		return err
 	}
 }
@@ -233,7 +248,7 @@ func (db *DB) first(ctx context.Context, spannerTransaction interface{}) func(co
 			query = db.builder.selectQuery()
 		}
 
-		err = SimpleQueryRead(ctx, spannerTransaction, query, db.builder.params, db.builder.model)
+		err = SimpleQueryReadWithOptions(ctx, spannerTransaction, query, db.builder.params, db.builder.model, db.builder.queryOptions)
 		return err
 	}
 }
@@ -388,7 +403,7 @@ func (db *DB) deleteWhere(ctx context.Context, spannerTransaction *spanner.ReadW
 	}
 }
 
-func simpleQueryRead(ctx context.Context, spannerTransaction interface{}, query string, params map[string]interface{}, result interface{}) func(ctx context.Context) error {
+func simpleQueryRead(ctx context.Context, spannerTransaction interface{}, query string, params map[string]interface{}, result interface{}, queryOpts *spanner.QueryOptions) func(ctx context.Context) error {
 	return func(ctx context.Context) error {
 		var (
 			iter *spanner.RowIterator
@@ -398,13 +413,25 @@ func simpleQueryRead(ctx context.Context, spannerTransaction interface{}, query 
 		stmt := spanner.Statement{SQL: query, Params: params}
 		log.Ctx(ctx).Info().Msgf("Select Query: %s Param: %+v", stmt.SQL, params)
 
-		rot, readOnly := spannerTransaction.(*spanner.ReadOnlyTransaction)
-		rwt, readWrite := spannerTransaction.(*spanner.ReadWriteTransaction)
-		if readOnly {
-			iter = rot.Query(ctx, stmt)
+		switch {
+		case queryOpts != nil:
+			switch txn := spannerTransaction.(type) {
+			case interface {
+				QueryWithOptions(context.Context, spanner.Statement, spanner.QueryOptions) *spanner.RowIterator
+			}:
+				iter = txn.QueryWithOptions(ctx, stmt, *queryOpts)
+			}
+		default:
+			switch txn := spannerTransaction.(type) {
+			case interface {
+				Query(context.Context, spanner.Statement) *spanner.RowIterator
+			}:
+				iter = txn.Query(ctx, stmt)
+			}
 		}
-		if readWrite {
-			iter = rwt.Query(ctx, stmt)
+
+		if iter == nil {
+			panic("An unexpected transaction.")
 		}
 
 		defer iter.Stop()
@@ -477,7 +504,7 @@ func execQueryWriter(ctx context.Context, spannerTransaction *spanner.ReadWriteT
 	case builder.refresh:
 		cmd = simpleQueryWriteForRefresh(ctx, spannerTransaction, query, builder)
 	default:
-		cmd = simpleQueryWrite(ctx, spannerTransaction, query, builder.params)
+		cmd = simpleQueryWrite(ctx, spannerTransaction, query, builder.params, builder.queryOptions)
 	}
 
 	if tracing != nil {
@@ -489,9 +516,14 @@ func execQueryWriter(ctx context.Context, spannerTransaction *spanner.ReadWriteT
 	return cmd(ctx)
 }
 
-func simpleQueryWrite(ctx context.Context, spannerTransaction *spanner.ReadWriteTransaction, query string, params map[string]interface{}) func(context.Context) (int64, error) {
+func simpleQueryWrite(ctx context.Context, spannerTransaction *spanner.ReadWriteTransaction, query string, params map[string]interface{}, queryOpts *spanner.QueryOptions) func(context.Context) (int64, error) {
 	return func(ctx context.Context) (int64, error) {
-		return spannerTransaction.Update(ctx, spanner.Statement{SQL: query, Params: params})
+		switch {
+		case queryOpts != nil:
+			return spannerTransaction.UpdateWithOptions(ctx, spanner.Statement{SQL: query, Params: params}, *queryOpts)
+		default:
+			return spannerTransaction.Update(ctx, spanner.Statement{SQL: query, Params: params})
+		}
 	}
 }
 
@@ -503,7 +535,12 @@ func simpleQueryWriteForRefresh(ctx context.Context, spannerTransaction *spanner
 	)
 
 	return func(ctx context.Context) (int64, error) {
-		iter = spannerTransaction.Query(ctx, spanner.Statement{SQL: query, Params: builder.params})
+		switch {
+		case builder.queryOptions != nil:
+			iter = spannerTransaction.QueryWithOptions(ctx, spanner.Statement{SQL: query, Params: builder.params}, *builder.queryOptions)
+		default:
+			iter = spannerTransaction.Query(ctx, spanner.Statement{SQL: query, Params: builder.params})
+		}
 		defer iter.Stop()
 		err = reflectValues(ctx, builder.model, row, iter)
 		return iter.RowCount, err

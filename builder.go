@@ -7,6 +7,7 @@ import (
 	"reflect"
 	"strings"
 
+	"cloud.google.com/go/spanner"
 	"github.com/10antz-inc/ssorm/v2/utils"
 )
 
@@ -24,6 +25,7 @@ type Builder struct {
 	softDelete      bool
 	softDeleteQuery string
 	params          map[string]interface{}
+	queryOptions    *spanner.QueryOptions
 }
 
 type SubBuilder struct {
