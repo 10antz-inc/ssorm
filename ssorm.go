@@ -187,7 +187,11 @@ func (db *DB) DeleteWhere(ctx context.Context, spannerTransaction *spanner.ReadW
 	return cmd(ctx)
 }
 
-func SimpleQueryRead(ctx context.Context, spannerTransaction interface{}, query string, params map[string]interface{}, result interface{}, queryOpts *spanner.QueryOptions) error {
+func SimpleQueryRead(ctx context.Context, spannerTransaction interface{}, query string, params map[string]interface{}, result interface{}) error {
+	return SimpleQueryReadWithOptions(ctx, spannerTransaction, query, params, result, nil)
+}
+
+func SimpleQueryReadWithOptions(ctx context.Context, spannerTransaction interface{}, query string, params map[string]interface{}, result interface{}, queryOpts *spanner.QueryOptions) error {
 	cmd := simpleQueryRead(ctx, spannerTransaction, query, params, result, queryOpts)
 	if tracing != nil {
 		statement := fmt.Sprintf("%s, params: %+v", query, params)
@@ -198,7 +202,11 @@ func SimpleQueryRead(ctx context.Context, spannerTransaction interface{}, query 
 	return cmd(ctx)
 }
 
-func SimpleQueryWrite(ctx context.Context, spannerTransaction *spanner.ReadWriteTransaction, query string, params map[string]interface{}, queryOpts *spanner.QueryOptions) (int64, error) {
+func SimpleQueryWrite(ctx context.Context, spannerTransaction *spanner.ReadWriteTransaction, query string, params map[string]interface{}) (int64, error) {
+	return SimpleQueryWriteWithOptions(ctx, spannerTransaction, query, params, nil)
+}
+
+func SimpleQueryWriteWithOptions(ctx context.Context, spannerTransaction *spanner.ReadWriteTransaction, query string, params map[string]interface{}, queryOpts *spanner.QueryOptions) (int64, error) {
 	cmd := simpleQueryWrite(ctx, spannerTransaction, query, params, queryOpts)
 	if tracing != nil {
 		statement := fmt.Sprintf("%s, params: %+v", query, params)
