@@ -230,7 +230,7 @@ func (db *DB) find(ctx context.Context, spannerTransaction interface{}) func(con
 			query = db.builder.selectQuery()
 		}
 
-		err = SimpleQueryRead(ctx, spannerTransaction, query, db.builder.params, db.builder.model, db.builder.queryOptions)
+		err = SimpleQueryReadWithOptions(ctx, spannerTransaction, query, db.builder.params, db.builder.model, db.builder.queryOptions)
 		return err
 	}
 }
@@ -248,7 +248,7 @@ func (db *DB) first(ctx context.Context, spannerTransaction interface{}) func(co
 			query = db.builder.selectQuery()
 		}
 
-		err = SimpleQueryRead(ctx, spannerTransaction, query, db.builder.params, db.builder.model, db.builder.queryOptions)
+		err = SimpleQueryReadWithOptions(ctx, spannerTransaction, query, db.builder.params, db.builder.model, db.builder.queryOptions)
 		return err
 	}
 }
