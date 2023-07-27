@@ -18,11 +18,6 @@ const (
 	OutputQueryLogTypeWriteOnly OutputQueryLogType = "write"
 )
 
-const (
-	DefaultLogFieldKey   = "log_label"
-	DefaultLogFieldValue = "ssorm"
-)
-
 type config struct {
 	fields             map[string]any
 	outputQueryLogType OutputQueryLogType
@@ -45,10 +40,6 @@ func newConfig(opts ...Option) *config {
 
 	for _, opt := range opts {
 		opt.apply(conf)
-	}
-
-	if len(conf.fields) < 1 {
-		conf.fields = map[string]any{DefaultLogFieldKey: DefaultLogFieldValue}
 	}
 
 	return conf
