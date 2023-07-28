@@ -1,25 +1,32 @@
 package ssorm
 
 import (
-	"fmt"
-
-	"github.com/10antz-inc/ssorm/v2/instrumentation/ssormotel"
-
 	"context"
 	"errors"
+	"fmt"
 	"reflect"
 
-	"cloud.google.com/go/spanner"
+	"github.com/10antz-inc/ssorm/v2/instrumentation/ssormotel"
+	"github.com/10antz-inc/ssorm/v2/logger"
 	"github.com/10antz-inc/ssorm/v2/utils"
-	"google.golang.org/api/iterator"
 
-	"github.com/rs/zerolog/log"
+	"cloud.google.com/go/spanner"
+	"google.golang.org/api/iterator"
 )
 
 var tracing ssormotel.Tracing
+var ssormLogger *logger.Logger
+
+func init() {
+	ssormLogger = logger.NewLogger()
+}
 
 func UseTrace(opts ...ssormotel.Option) {
 	tracing = ssormotel.NewTracing(opts...)
+}
+
+func LoggerConfig(opts ...logger.Option) {
+	ssormLogger = logger.NewLogger(opts...)
 }
 
 type Option func(*DB)
@@ -267,7 +274,7 @@ func (db *DB) count(ctx context.Context, spannerTransaction interface{}, cnt int
 
 		stmt := spanner.Statement{SQL: query, Params: db.builder.params}
 
-		log.Ctx(ctx).Info().Msgf("Select Query: %s Param: %+v", stmt.SQL, db.builder.params)
+		ssormLogger.ReadLog(ctx, "Select Query: %s Param: %+v", stmt.SQL, db.builder.params)
 
 		rot, readOnly := spannerTransaction.(*spanner.ReadOnlyTransaction)
 		rwt, readWrite := spannerTransaction.(*spanner.ReadWriteTransaction)
@@ -287,7 +294,7 @@ func (db *DB) count(ctx context.Context, spannerTransaction interface{}, cnt int
 				return err
 			}
 			if err := row.ColumnByName("CNT", cnt); err != nil {
-				log.Ctx(ctx).Error().Interface("error: %+v", err).Msgf("Error: %s", err)
+				ssormLogger.ErrorLog(ctx, err, "")
 				return err
 			}
 			break
@@ -303,7 +310,7 @@ func (db *DB) insert(ctx context.Context, spannerTransaction *spanner.ReadWriteT
 		if err != nil {
 			return 0, err
 		}
-		log.Ctx(ctx).Info().Msgf("Insert Query: %s Param: %+v", db.builder.query, db.builder.params)
+		ssormLogger.WriteLog(ctx, "Insert Query: %s Param: %+v", db.builder.query, db.builder.params)
 		return execQueryWriter(ctx, spannerTransaction, query, db.builder)
 	}
 }
@@ -314,7 +321,7 @@ func (db *DB) update(ctx context.Context, spannerTransaction *spanner.ReadWriteT
 		if err != nil {
 			return 0, err
 		}
-		log.Ctx(ctx).Info().Msgf("Update Query: %s Param: %+v", db.builder.query, db.builder.params)
+		ssormLogger.WriteLog(ctx, "Update Query: %s Param: %+v", db.builder.query, db.builder.params)
 		return execQueryWriter(ctx, spannerTransaction, query, db.builder)
 	}
 }
@@ -325,7 +332,7 @@ func (db *DB) updateColumns(ctx context.Context, spannerTransaction *spanner.Rea
 		if err != nil {
 			return 0, err
 		}
-		log.Ctx(ctx).Info().Msgf("Update Query: %s Param: %+v", db.builder.query, db.builder.params)
+		ssormLogger.WriteLog(ctx, "Update Query: %s Param: %+v", db.builder.query, db.builder.params)
 		return execQueryWriter(ctx, spannerTransaction, query, db.builder)
 	}
 }
@@ -336,7 +343,7 @@ func (db *DB) updateOmit(ctx context.Context, spannerTransaction *spanner.ReadWr
 		if err != nil {
 			return 0, err
 		}
-		log.Ctx(ctx).Info().Msgf("Update Query: %s Param: %+v", db.builder.query, db.builder.params)
+		ssormLogger.WriteLog(ctx, "Update Query: %s Param: %+v", db.builder.query, db.builder.params)
 		return execQueryWriter(ctx, spannerTransaction, query, db.builder)
 	}
 }
@@ -347,7 +354,7 @@ func (db *DB) updateParams(ctx context.Context, spannerTransaction *spanner.Read
 		if err != nil {
 			return 0, err
 		}
-		log.Ctx(ctx).Info().Msgf("Update Query: %s Param: %+v", db.builder.query, db.builder.params)
+		ssormLogger.WriteLog(ctx, "Update Query: %s Param: %+v", db.builder.query, db.builder.params)
 		return execQueryWriter(ctx, spannerTransaction, query, db.builder)
 	}
 }
@@ -366,7 +373,7 @@ func (db *DB) deleteModel(ctx context.Context, spannerTransaction *spanner.ReadW
 			}
 			rowCount, err := execQueryWriter(ctx, spannerTransaction, query, db.builder)
 
-			log.Ctx(ctx).Info().Msgf("Update Query: %s Param: %+v", db.builder.query, db.builder.params)
+			ssormLogger.WriteLog(ctx, "Update Query: %s Param: %+v", db.builder.query, db.builder.params)
 			return rowCount, err
 		}
 
@@ -374,7 +381,7 @@ func (db *DB) deleteModel(ctx context.Context, spannerTransaction *spanner.ReadW
 		if err != nil {
 			return 0, err
 		}
-		log.Ctx(ctx).Info().Msgf("DELETE Query: %s Param: %+v", db.builder.query, db.builder.params)
+		ssormLogger.WriteLog(ctx, "DELETE Query: %s Param: %+v", db.builder.query, db.builder.params)
 		return execQueryWriter(ctx, spannerTransaction, query, db.builder)
 	}
 }
@@ -390,7 +397,7 @@ func (db *DB) deleteWhere(ctx context.Context, spannerTransaction *spanner.ReadW
 			if err != nil {
 				return 0, err
 			}
-			log.Ctx(ctx).Info().Msgf("Update Query: %s Param: %+v", db.builder.query, db.builder.params)
+			ssormLogger.WriteLog(ctx, "Update Query: %s Param: %+v", db.builder.query, db.builder.params)
 			return execQueryWriter(ctx, spannerTransaction, query, db.builder)
 		}
 
@@ -398,7 +405,7 @@ func (db *DB) deleteWhere(ctx context.Context, spannerTransaction *spanner.ReadW
 		if err != nil {
 			return 0, err
 		}
-		log.Ctx(ctx).Info().Msgf("DELETE Query: %s Param: %+v", db.builder.query, db.builder.params)
+		ssormLogger.WriteLog(ctx, "DELETE Query: %s Param: %+v", db.builder.query, db.builder.params)
 		return execQueryWriter(ctx, spannerTransaction, query, db.builder)
 	}
 }
@@ -411,7 +418,7 @@ func simpleQueryRead(ctx context.Context, spannerTransaction interface{}, query 
 		)
 
 		stmt := spanner.Statement{SQL: query, Params: params}
-		log.Ctx(ctx).Info().Msgf("Select Query: %s Param: %+v", stmt.SQL, params)
+		ssormLogger.ReadLog(ctx, "Select Query: %s Param: %+v", stmt.SQL, params)
 
 		switch {
 		case queryOpts != nil:
@@ -466,7 +473,7 @@ func reflectValues(ctx context.Context, result interface{}, row *spanner.Row, it
 			results := reflect.Indirect(reflect.ValueOf(result))
 			elem := reflect.New(resultType).Interface()
 			if err := row.ToStruct(elem); err != nil {
-				log.Ctx(ctx).Error().Interface("error: %+v", err).Msgf("Failed to struct: %s", err)
+				ssormLogger.ErrorLog(ctx, err, "")
 				return err
 			}
 
@@ -480,14 +487,13 @@ func reflectValues(ctx context.Context, result interface{}, row *spanner.Row, it
 		for {
 			if row, err = iter.Next(); err != nil {
 				if err == iterator.Done {
-					log.Ctx(ctx).Debug().Msgf("Result: %+v", result)
 					return nil
 				}
 				return err
 			}
 
 			if err := row.ToStruct(result); err != nil {
-				log.Ctx(ctx).Error().Interface("error: %+v", err).Msgf("Failed to struct: %s", err)
+				ssormLogger.ErrorLog(ctx, err, "")
 				return err
 			}
 			break
