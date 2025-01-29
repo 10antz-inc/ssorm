@@ -524,6 +524,7 @@ func execQueryWriter(ctx context.Context, spannerTransaction *spanner.ReadWriteT
 
 func simpleQueryWrite(ctx context.Context, spannerTransaction *spanner.ReadWriteTransaction, query string, params map[string]interface{}, queryOpts *spanner.QueryOptions) func(context.Context) (int64, error) {
 	return func(ctx context.Context) (int64, error) {
+		ssormLogger.WriteLog(ctx, "Simple Write Query: %s Param: %+v", query, params)
 		switch {
 		case queryOpts != nil:
 			return spannerTransaction.UpdateWithOptions(ctx, spanner.Statement{SQL: query, Params: params}, *queryOpts)
@@ -541,6 +542,7 @@ func simpleQueryWriteForRefresh(ctx context.Context, spannerTransaction *spanner
 	)
 
 	return func(ctx context.Context) (int64, error) {
+		ssormLogger.WriteLog(ctx, "Simple Write Query: %s Param: %+v", query, builder.params)
 		switch {
 		case builder.queryOptions != nil:
 			iter = spannerTransaction.QueryWithOptions(ctx, spanner.Statement{SQL: query, Params: builder.params}, *builder.queryOptions)
